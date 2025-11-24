@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | PosterBox</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin:0; font-family:'Plus Jakarta Sans', sans-serif; height:100vh; display:flex; overflow:hidden; }
+        
+        /* Left Side (Visual) */
+        .visual-side { flex:1; background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); display:flex; align-items:center; justify-content:center; color:white; flex-direction:column; padding:40px; }
+        .visual-side h1 { font-size:3rem; margin:0 0 20px 0; }
+        .visual-side p { font-size:1.2rem; opacity:0.9; max-width:400px; text-align:center; line-height:1.6; }
+
+        /* Right Side (Form) */
+        .form-side { width:500px; background:white; padding:60px; display:flex; flex-direction:column; justify-content:center; overflow-y:auto; }
+        
+        .tabs { display:flex; border-bottom:1px solid #e2e8f0; margin-bottom:30px; }
+        .tab { padding:15px 0; margin-right:20px; cursor:pointer; font-weight:600; color:#64748b; border-bottom:2px solid transparent; transition:0.3s; }
+        .tab.active { color:#4f46e5; border-bottom-color:#4f46e5; }
+        
+        .input-group { margin-bottom:20px; }
+        label { display:block; font-size:0.875rem; font-weight:700; color:#1e293b; margin-bottom:8px; }
+        input, select { width:100%; padding:14px; border:1px solid #cbd5e1; border-radius:8px; font-size:1rem; outline:none; transition:0.2s; box-sizing:border-box; }
+        input:focus { border-color:#4f46e5; box-shadow:0 0 0 3px rgba(79, 70, 229, 0.1); }
+        
+        .btn { width:100%; padding:16px; background:#4f46e5; color:white; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer; transition:0.2s; margin-top:10px; }
+        .btn:hover { background:#4338ca; }
+        
+        .hidden { display:none; }
+        
+        @media(max-width:900px) { .visual-side { display:none; } .form-side { width:100%; } }
+    </style>
+</head>
+<body>
+
+    <div class="visual-side">
+        <h1>PosterBox</h1>
+        <p>Empower your movement with professional campaign tools. Create templates, share links, and go viral.</p>
+    </div>
+
+    <div class="form-side">
+        <div style="margin-bottom:40px;">
+            <h2 style="margin:0; font-size:1.8rem;">Welcome Back</h2>
+            <p style="color:#64748b; margin-top:5px;">Please enter your details to continue.</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="setMode('login')">Log In</div>
+            <div class="tab" onclick="setMode('signup')">Create Account</div>
+        </div>
+
+        <div id="loginForm">
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="lEmail" placeholder="you@example.com">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="lPass" placeholder="••••••••">
+            </div>
+            <button class="btn" onclick="login()">Access Dashboard</button>
+        </div>
+
+        <div id="signupForm" class="hidden">
+            <div id="dynamicFields"></div>
+            <button class="btn" onclick="signup()">Register Organization</button>
+        </div>
+        
+        <div style="margin-top:30px; text-align:center;">
+            <a href="index.html" style="color:#64748b; text-decoration:none; font-size:0.9rem;">← Back to Homepage</a>
+        </div>
+    </div>
+
+    <script>
+        function setMode(mode) {
+            document.getElementById('loginForm').style.display = mode === 'login' ? 'block' : 'none';
+            document.getElementById('signupForm').style.display = mode === 'signup' ? 'block' : 'none';
+            const tabs = document.querySelectorAll('.tab');
+            tabs[0].classList.toggle('active', mode === 'login');
+            tabs[1].classList.toggle('active', mode === 'signup');
+        }
+
+        // Setup Signup Fields
+        const fields = JSON.parse(localStorage.getItem('regRules')) || [
+            { id:'sys_name', label:'Organization Name', type:'text', required:true },
+            { id:'sys_email', label:'Email Address', type:'email', required:true },
+            { id:'sys_user', label:'Username', type:'text', required:true },
+            { id:'sys_pass', label:'Password', type:'password', required:true }
+        ];
+
+        const container = document.getElementById('dynamicFields');
+        fields.forEach(f => {
+            container.innerHTML += `
+                <div class="input-group">
+                    <label>${f.label} ${f.required?'*':''}</label>
+                    <input type="${f.type}" id="${f.id}" placeholder="${f.label}">
+                </div>`;
+        });
+
+        function signup() {
+            let data = {};
+            for(let f of fields) {
+                const val = document.getElementById(f.id).value;
+                if(f.required && !val) return alert(`Please enter your ${f.label}`);
+                data[f.id] = val;
+            }
+            // Normalize data for system
+            const acc = { name: data['sys_name'], email: data['sys_email'], user: data['sys_user'], pass: data['sys_pass'] };
+            localStorage.setItem('clientAccount', JSON.stringify(acc));
+            alert("Account created successfully!");
+            setMode('login');
+        }
+
+        function login() {
+            const e = document.getElementById('lEmail').value;
+            const p = document.getElementById('lPass').value;
+            const acc = JSON.parse(localStorage.getItem('clientAccount'));
+            
+            if(acc && (acc.email===e || acc.user===e) && acc.pass===p) {
+                localStorage.setItem('isLoggedIn', 'true');
+                window.location.href = 'dashboard.html';
+            } else {
+                alert("Invalid credentials.");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Generator | PosterBox</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lobster&family=Montserrat:wght@700&family=Oswald:wght@500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { margin:0; font-family:'Inter', sans-serif; background:#f3f4f6; display:flex; flex-direction:column; height:100vh; overscroll-behavior: none; }
+        
+        header { background:white; padding:15px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; z-index: 20; }
+        .brand { font-weight:800; font-size:1.2rem; color:#111827; }
+        .btn-back { text-decoration:none; color:#6b7280; font-weight:600; font-size:0.9rem; }
+
+        /* LAYOUT */
+        .container { flex:1; display:flex; flex-direction:row-reverse; overflow:hidden; }
+        
+        .preview { flex:1; background:#e5e7eb; display:flex; align-items:center; justify-content:center; padding:20px; overflow:hidden; position: relative; touch-action: none; }
+        canvas { max-width:100%; max-height:100%; box-shadow:0 20px 40px rgba(0,0,0,0.1); background:white; border-radius:4px; cursor: pointer; }
+        
+        .inputs { width:400px; background:white; padding:30px; overflow-y:auto; display:flex; flex-direction:column; gap:25px; z-index:10; box-shadow:-5px 0 20px rgba(0,0,0,0.05); }
+        
+        .desc-box { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 15px; font-size: 0.9rem; color: #1e40af; line-height: 1.5; margin-top: 10px; display: none; }
+        .step-title { font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#9ca3af; font-weight:800; margin-bottom:8px; }
+        
+        .upload-card { border:2px dashed #d1d5db; padding:15px; border-radius:12px; cursor:pointer; display:flex; gap:15px; align-items:center; background:#f9fafb; transition:0.2s; }
+        .upload-card:hover { border-color:#4f46e5; background:#eef2ff; }
+        .thumb { width:60px; height:60px; background:#e5e7eb; border-radius:8px; object-fit:cover; }
+        .input-field { width:100%; padding:14px; border:1px solid #d1d5db; border-radius:8px; font-size:1rem; outline:none; }
+        .input-field:focus { border-color:#4f46e5; }
+        
+        /* ACTION BUTTONS */
+        .btn-group { margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+        .btn-down { background:#111827; color:white; padding:16px; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:0.2s; }
+        .btn-down:hover { background:#000; }
+        
+        .btn-share { background:#4f46e5; color:white; padding:16px; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:0.2s; }
+        .btn-share:hover { background:#4338ca; box-shadow:0 5px 15px rgba(79, 70, 229, 0.3); }
+
+        /* MODALS */
+        .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; display:none; flex-direction:column; justify-content:center; align-items:center; }
+        
+        /* Cropper Modal */
+        #cropBox { flex:1; overflow:hidden; display:flex; justify-content:center; align-items:center; width:100%; }
+        #cropActs { padding:20px; display:flex; justify-content:center; gap:15px; background:#111827; width:100%; }
+        .c-btn { padding:12px 25px; border-radius:30px; border:none; cursor:pointer; font-weight:bold; }
+
+        /* Share Modal (Desktop) */
+        .share-card { background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3); }
+        .share-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
+        .share-opt { padding:12px; border-radius:8px; text-decoration:none; font-weight:600; color:white; display:flex; align-items:center; justify-content:center; gap:5px; font-size:0.9rem; }
+        .so-wa { background:#25D366; } .so-fb { background:#1877F2; } .so-x { background:#000; } .so-in { background:#0a66c2; }
+        .close-share { margin-top:20px; background:none; border:none; text-decoration:underline; color:#6b7280; cursor:pointer; }
+
+        @media(max-width:900px) { .container{flex-direction:column;} .inputs{width:100%; height:60%; border-top:1px solid #e5e7eb;} .preview{height:40%;} }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">Poster<span style="color:#4f46e5">Box</span></div>
+        <a href="index.html" class="btn-back">Cancel</a>
+    </header>
+    
+    <div class="container">
+        <div class="inputs" id="formArea">
+            <div>
+                <h2 id="cName" style="margin:0; font-size:1.5rem;">Loading...</h2>
+                <div id="cDesc" class="desc-box"></div>
+            </div>
+            
+            <div id="fields" style="display:flex; flex-direction:column; gap:25px;"></div>
+            
+            <div class="btn-group">
+                <button class="btn-share" onclick="sharePoster()">
+                    <span>🚀</span> Share Campaign
+                </button>
+                <button class="btn-down" onclick="download()">
+                    <span>⬇</span> Download Image
+                </button>
+            </div>
+        </div>
+        <div class="preview">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <div id="cropModal" class="modal">
+        <div id="cropBox"><img id="imgToCrop" style="max-width:100%;"></div>
+        <div id="cropActs">
+            <button class="c-btn" style="background:white;" onclick="closeCrop()">Cancel</button>
+            <button class="c-btn" style="background:#4f46e5; color:white;" onclick="applyCrop()">Apply</button>
+        </div>
+    </div>
+
+    <div id="shareModal" class="modal">
+        <div class="share-card">
+            <h2 style="margin:0 0 10px 0;">Share this Campaign</h2>
+            <p style="color:#6b7280; font-size:0.9rem; margin:0;">Help us spread the word!</p>
+            
+            <div class="share-grid">
+                <a id="lnkWa" target="_blank" class="share-opt so-wa">WhatsApp</a>
+                <a id="lnkFb" target="_blank" class="share-opt so-fb">Facebook</a>
+                <a id="lnkX" target="_blank" class="share-opt so-x">X / Twitter</a>
+                <a id="lnkIn" target="_blank" class="share-opt so-in">LinkedIn</a>
+            </div>
+            <div style="margin-top:15px; padding:10px; background:#f3f4f6; border-radius:8px; font-size:0.8rem; color:#666; word-break:break-all;">
+                <span id="linkDisplay"></span>
+            </div>
+            <button class="close-share" onclick="closeShare()">Close</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script>
+        // --- 1. INIT ---
+        const id = new URLSearchParams(window.location.search).get('id');
+        const camp = (JSON.parse(localStorage.getItem('allCampaigns'))||[]).find(c=>c.id===id);
+        if(!camp){alert('404');window.location.href='index.html';}
+
+        document.getElementById('cName').innerText = camp.title;
+        if(camp.desc) { const d=document.getElementById('cDesc'); d.innerText=camp.desc; d.style.display='block'; }
+
+        // Load Fonts
+        camp.elements.forEach(el=>{ if(el.customFontData){ const f=new FontFace(el.font, `url(${el.customFontData})`); f.load().then(l=>document.fonts.add(l)); }});
+
+        const cvs = document.getElementById('canvas');
+        const ctx = cvs.getContext('2d');
+        const userDat = {}; 
+        const bg = new Image();
+        
+        // Interaction State
+        let selId = null;
+        let isDragging = false, isResizing = false, isPinching = false;
+        let resizeHandle = null, dragStart = {x:0,y:0}, initialEl = {}, initialPinchDist = 0;
+
+        bg.src = camp.image;
+        bg.onload = () => {
+            cvs.width = bg.width; cvs.height = bg.height;
+            draw(); renderInputs();
+        }
+
+        // --- 2. UI BUILDER ---
+        function renderInputs() {
+            const div = document.getElementById('fields');
+            [...camp.elements].sort((a,b)=>a.y-b.y).forEach(el => {
+                if(el.type === 'photo') {
+                    div.innerHTML += `<div><div class="step-title">Upload Photo</div><label class="upload-card"><img id="thumb_${el.id}" class="thumb"><div style="margin-left:10px;"><div>Choose Image</div><small style="color:#9ca3af">Tap to crop</small></div><input type="file" hidden accept="image/*" onchange="initCrop(event, '${el.id}')"></label></div>`;
+                } else if(el.type === 'input') {
+                    div.innerHTML += `<div><div class="step-title">${el.placeholder}</div><input type="text" class="input-field" placeholder="Type here..." oninput="txt('${el.id}', this.value)"></div>`;
+                }
+            });
+        }
+        function txt(id, val) { userDat[id] = val; draw(); }
+
+        // --- 3. CROPPER ---
+        let cropper, activeId;
+        function initCrop(e, id) {
+            const f = e.target.files[0]; if(!f) return; activeId = id;
+            const r = new FileReader();
+            r.onload = (ev) => { document.getElementById('imgToCrop').src = ev.target.result; document.getElementById('cropModal').style.display='flex'; if(cropper)cropper.destroy(); cropper=new Cropper(document.getElementById('imgToCrop'),{viewMode:1}); }
+            r.readAsDataURL(f); e.target.value='';
+        }
+        function applyCrop() {
+            const res = cropper.getCroppedCanvas().toDataURL(); const img=new Image(); img.src=res;
+            img.onload=()=>{ userDat[activeId]=img; document.getElementById('thumb_'+activeId).src=res; draw(); closeCrop(); }
+        }
+        function closeCrop(){ document.getElementById('cropModal').style.display='none'; }
+
+        // --- 4. INTERACTION (Touch/Mouse) ---
+        function getPtrPos(e) {
+            const r = cvs.getBoundingClientRect();
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            const mult = cvs.width / r.width; 
+            return { x: (cx - r.left) * mult, y: (cy - r.top) * mult };
+        }
+        function getBaseScale() { return cvs.width / 450; }
+
+        const handleStart = (e) => {
+            if(e.type === 'touchstart') e.preventDefault();
+            if (e.touches && e.touches.length === 2) {
+                isPinching = true;
+                const t1 = e.touches[0]; const t2 = e.touches[1];
+                initialPinchDist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
+                if (selId) initialEl = { ...camp.elements.find(x => x.id === selId) };
+                return;
+            }
+            const m = getPtrPos(e); const s = getBaseScale();
+            // Check Handle
+            if (selId && !e.touches) {
+                const el = camp.elements.find(x => x.id === selId);
+                const ex = el.x*s, ey = el.y*s, ew = el.w*s, eh = el.h*s, hs = 15*s; 
+                if (hitTest(m.x, m.y, ex+ew-hs, ey+eh-hs, hs*2)) { startResize('br', m, el); return; }
+            }
+            // Check Element
+            const clicked = [...camp.elements].sort((a,b)=>b.zIndex-a.zIndex).find(el => {
+                const x=el.x*s, y=el.y*s, w=el.w*s, h=el.h*s;
+                return (m.x>=x && m.x<=x+w && m.y>=y && m.y<=y+h);
+            });
+            if (clicked) { selId = clicked.id; isDragging = true; dragStart = m; initialEl = { ...clicked }; draw(); } 
+            else { selId = null; draw(); }
+        };
+
+        const handleMove = (e) => {
+            if (!isDragging && !isResizing && !isPinching) return;
+            if(e.type === 'touchmove') e.preventDefault();
+            if (isPinching && selId && e.touches.length === 2) {
+                const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                const scale = dist / initialPinchDist;
+                const el = camp.elements.find(x => x.id === selId);
+                el.w = Math.max(20, initialEl.w * scale); el.h = Math.max(20, initialEl.h * scale);
+                draw(); return;
+            }
+            const m = getPtrPos(e); const s = getBaseScale(); const el = camp.elements.find(x => x.id === selId);
+            if(!el) return;
+            const dx = (m.x - dragStart.x) / s; const dy = (m.y - dragStart.y) / s;
+            if (isDragging) { el.x = initialEl.x + dx; el.y = initialEl.y + dy; } 
+            else if (isResizing) { el.w = Math.max(20, initialEl.w + dx); el.h = Math.max(20, initialEl.h + dy); }
+            draw();
+        };
+
+        const handleEnd = () => { isDragging = false; isResizing = false; isPinching = false; };
+        
+        cvs.addEventListener('mousedown', handleStart); cvs.addEventListener('touchstart', handleStart, {passive:false});
+        window.addEventListener('mousemove', handleMove); window.addEventListener('touchmove', handleMove, {passive:false});
+        window.addEventListener('mouseup', handleEnd); window.addEventListener('touchend', handleEnd);
+
+        function hitTest(mx,my,x,y,s) { return (mx>=x && mx<=x+s && my>=y && my<=y+s); }
+        function startResize(h,m,el) { isResizing=true; resizeHandle=h; dragStart=m; initialEl={...el}; }
+
+        // --- 5. SHARE LOGIC ---
+        async function sharePoster() {
+            // 1. Deselect UI
+            selId = null; draw();
+
+            // 2. Generate Blob
+            const dataUrl = cvs.toDataURL('image/png');
+            const blob = await (await fetch(dataUrl)).blob();
+            const file = new File([blob], "poster.png", { type: "image/png" });
+            const shareData = { title: camp.title, text: `Create your poster for ${camp.title}!`, url: window.location.href };
+
+            // 3. Try Native Share (Mobile)
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({ ...shareData, files: [file] });
+                } catch (err) { console.log('Share cancelled'); }
+            } else {
+                // 4. Fallback Modal (Desktop)
+                openShareModal();
+            }
+        }
+
+        function openShareModal() {
+            const url = encodeURIComponent(window.location.href);
+            const txt = encodeURIComponent(`Create your poster for ${camp.title}!`);
+            
+            document.getElementById('lnkWa').href = `https://wa.me/?text=${txt}%20${url}`;
+            document.getElementById('lnkFb').href = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+            document.getElementById('lnkX').href = `https://twitter.com/intent/tweet?url=${url}&text=${txt}`;
+            document.getElementById('lnkIn').href = `https://www.linkedin.com/shareArticle?mini=true&url=${url}`;
+            document.getElementById('linkDisplay').innerText = window.location.href;
+            
+            document.getElementById('shareModal').style.display = 'flex';
+        }
+        function closeShare() { document.getElementById('shareModal').style.display = 'none'; }
+
+        // --- 6. DRAW & DOWNLOAD ---
+        function draw() {
+            ctx.clearRect(0, 0, cvs.width, cvs.height); ctx.drawImage(bg, 0, 0, cvs.width, cvs.height);
+            const s = getBaseScale();
+            [...camp.elements].sort((a,b)=>a.zIndex-b.zIndex).forEach(el => {
+                const x=el.x*s, y=el.y*s, w=el.w*s, h=el.h*s; ctx.save(); ctx.globalAlpha = el.opacity||1;
+                if(el.type === 'photo') {
+                    ctx.beginPath();
+                    if(el.shape==='circle') ctx.arc(x+w/2, y+h/2, w/2, 0, Math.PI*2);
+                    else if(el.shape==='rect') ctx.roundRect(x,y,w,h, (el.radius||0)*s);
+                    ctx.closePath(); ctx.clip();
+                    if(userDat[el.id]) ctx.drawImage(userDat[el.id], x,y,w,h);
+                    else { ctx.fillStyle="rgba(255,255,255,0.5)"; ctx.fillRect(x,y,w,h); ctx.fillStyle="#666"; ctx.font=(14*s)+"px Inter"; ctx.textAlign="center"; ctx.fillText("Photo", x+w/2, y+h/2); }
+                } else {
+                    const txt = el.type==='input' ? (userDat[el.id]||el.placeholder) : el.text;
+                    ctx.font = `${(el.bold?'bold ':'')}${(el.italic?'italic ':'')} ${el.size*s}px ${el.font}`;
+                    ctx.fillStyle = el.color; if(el.shadow){ctx.shadowColor="rgba(0,0,0,0.5)"; ctx.shadowBlur=4;}
+                    let tx = x; if(el.align==='center')tx=x+w/2; if(el.align==='right')tx=x+w;
+                    ctx.textAlign=el.align; ctx.textBaseline='middle'; ctx.fillText(txt, tx, y+h/2);
+                }
+                ctx.restore();
+                if (selId === el.id) {
+                    ctx.save(); ctx.strokeStyle = "#4f46e5"; ctx.lineWidth = 2*s; ctx.setLineDash([5*s, 5*s]); ctx.strokeRect(x,y,w,h);
+                    if(!('ontouchstart' in window)) { // Only show handles on desktop
+                        const hs = 15*s; ctx.fillStyle = "white"; ctx.setLineDash([]); ctx.fillRect(x+w-hs/2, y+h-hs/2, hs, hs); ctx.strokeRect(x+w-hs/2, y+h-hs/2, hs, hs);
+                    }
+                    ctx.restore();
+                }
+            });
+        }
+
+        function download() { selId = null; draw(); setTimeout(() => { const a = document.createElement('a'); a.download = `Poster_${camp.title}.jpg`; a.href = cvs.toDataURL('image/jpeg', 0.95); a.click(); }, 50); }
+    </script>
+</body>
+</html>
