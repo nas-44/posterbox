@@ -13,7 +13,7 @@
         .visual-side p { font-size:1.2rem; opacity:0.9; max-width:400px; text-align:center; line-height:1.6; }
 
         /* Right Side (Form) */
-        .form-side { width:500px; background:white; padding:60px; display:flex; flex-direction:column; justify-content:center; overflow-y:auto; }
+        .form-side { width:500px; background:white; padding:60px; display:flex; flex-direction:column; justify-content:center; overflow-y:auto; position: relative; }
         
         .tabs { display:flex; border-bottom:1px solid #e2e8f0; margin-bottom:30px; }
         .tab { padding:15px 0; margin-right:20px; cursor:pointer; font-weight:600; color:#64748b; border-bottom:2px solid transparent; transition:0.3s; }
@@ -52,8 +52,8 @@
 
         <div id="loginForm">
             <div class="input-group">
-                <label>Email Address</label>
-                <input type="email" id="lEmail" placeholder="you@example.com">
+                <label>Email or Username</label>
+                <input type="text" id="lEmail" placeholder="e.g. admin or you@example.com">
             </div>
             <div class="input-group">
                 <label>Password</label>
@@ -81,15 +81,24 @@
             tabs[1].classList.toggle('active', mode === 'signup');
         }
 
-        // Setup Signup Fields
-        const fields = JSON.parse(localStorage.getItem('regRules')) || [
-            { id:'sys_name', label:'Organization Name', type:'text', required:true },
-            { id:'sys_email', label:'Email Address', type:'email', required:true },
-            { id:'sys_user', label:'Username', type:'text', required:true },
-            { id:'sys_pass', label:'Password', type:'password', required:true }
-        ];
+        function loadFields() {
+            let stored = JSON.parse(localStorage.getItem('regRules'));
+            const coreFields = [
+                { id:'sys_name', label:'Organization Name', type:'text', required:true },
+                { id:'sys_email', label:'Email Address', type:'email', required:true },
+                { id:'sys_user', label:'Username', type:'text', required:true },
+                { id:'sys_pass', label:'Password', type:'password', required:true }
+            ];
+            if (!stored || !stored.find(f => f.id === 'sys_user')) {
+                stored = coreFields;
+                localStorage.setItem('regRules', JSON.stringify(stored));
+            }
+            return stored;
+        }
 
+        const fields = loadFields();
         const container = document.getElementById('dynamicFields');
+        
         fields.forEach(f => {
             container.innerHTML += `
                 <div class="input-group">
@@ -101,27 +110,51 @@
         function signup() {
             let data = {};
             for(let f of fields) {
-                const val = document.getElementById(f.id).value;
+                const el = document.getElementById(f.id);
+                if (!el) continue; 
+                const val = el.value;
                 if(f.required && !val) return alert(`Please enter your ${f.label}`);
                 data[f.id] = val;
             }
-            // Normalize data for system
-            const acc = { name: data['sys_name'], email: data['sys_email'], user: data['sys_user'], pass: data['sys_pass'] };
+
+            const name = data['sys_name'] || "New User";
+            const email = data['sys_email'] || "user@example.com";
+            const user = data['sys_user'];
+            const pass = data['sys_pass'];
+
+            if (!user || !pass) return alert("Error: Username and Password fields are missing.");
+
+            const acc = { name, email, user, pass };
             localStorage.setItem('clientAccount', JSON.stringify(acc));
-            alert("Account created successfully!");
-            setMode('login');
+            
+            localStorage.setItem('isLoggedIn', 'true');
+            alert("Account created! Redirecting...");
+            window.location.href = 'dashboard.html';
         }
 
         function login() {
-            const e = document.getElementById('lEmail').value;
-            const p = document.getElementById('lPass').value;
+            const e = document.getElementById('lEmail').value.trim();
+            const p = document.getElementById('lPass').value.trim();
+            
+            if(!e || !p) return alert("Please fill in all fields.");
+
             const acc = JSON.parse(localStorage.getItem('clientAccount'));
             
-            if(acc && (acc.email===e || acc.user===e) && acc.pass===p) {
+            if (!acc) {
+                alert("No account found on this device. Please switch to the 'Create Account' tab.");
+                return;
+            }
+            
+            if (acc.banned) {
+                alert("This account has been suspended by the administrator.");
+                return;
+            }
+
+            if((acc.email === e || acc.user === e) && acc.pass === p) {
                 localStorage.setItem('isLoggedIn', 'true');
                 window.location.href = 'dashboard.html';
             } else {
-                alert("Invalid credentials.");
+                alert("Incorrect password or username.");
             }
         }
     </script>

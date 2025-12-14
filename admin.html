@@ -2,94 +2,106 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin | PosterBox</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --sidebar: #0f172a; --bg: #f8fafc; --surface: #ffffff;
             --primary: #4f46e5; --text: #334155; --border: #e2e8f0;
-            --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+            --danger: #ef4444; --success: #10b981;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin:0; font-family:'Plus Jakarta Sans', sans-serif; background:var(--bg); color:var(--text); display:flex; height:100vh; overflow:hidden; }
 
-        /* SIDEBAR */
-        .sidebar { width: 260px; background: var(--sidebar); color: white; display: flex; flex-direction: column; padding: 24px; flex-shrink: 0; }
+        /* --- SIDEBAR --- */
+        .sidebar { 
+            width: 260px; background: var(--sidebar); color: white; display: flex; flex-direction: column; 
+            padding: 20px; flex-shrink: 0; transition: transform 0.3s ease; z-index: 1000;
+        }
         .brand { font-size: 1.4rem; font-weight: 700; color: #818cf8; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        
         .nav-item { 
-            padding: 12px 16px; border-radius: 8px; margin-bottom: 4px; cursor: pointer; 
+            padding: 14px 16px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; 
             font-weight: 600; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; gap: 12px; 
         }
         .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
-        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+        .nav-item.active { background: var(--primary); color: white; }
 
-        /* MAIN */
-        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .header { height: 64px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
-        .content-area { flex: 1; padding: 32px; overflow-y: auto; }
+        /* Overlay */
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
+
+        /* --- MAIN --- */
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .header { height: 60px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .menu-toggle { display: none; font-size: 1.5rem; cursor: pointer; background: none; border: none; color: var(--text); }
+        .content-area { flex: 1; padding: 20px; overflow-y: auto; }
 
         /* CARDS */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-bottom: 32px; }
-        .card { background: var(--surface); padding: 24px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 24px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card { background: var(--surface); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 20px; }
+        .stat-val { font-size: 1.8rem; font-weight: 800; color: var(--sidebar); }
+        .stat-lbl { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* TABLES */
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { text-align: left; padding: 12px; background: #f8fafc; color: #64748b; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
+        .thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: #eee; vertical-align: middle; margin-right: 10px; }
+
+        /* CRM */
+        .user-header { display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px; }
+        .avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; display: grid; place-items: center; font-size: 1.5rem; font-weight: 700; }
         
-        /* STATS */
-        .stat-val { font-size: 2rem; font-weight: 800; color: var(--sidebar); margin-top: 5px; }
-        .stat-lbl { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 5px; }
+        .bg-pro { background: #e0e7ff; color: var(--primary); }
+        .bg-free { background: #f1f5f9; color: #64748b; }
+        .bg-green { background: var(--success); color: white; }
+        .bg-gray { background: #94a3b8; color: white; }
 
-        /* USER PROFILE CARD */
-        .user-profile-header { display: flex; gap: 20px; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px; }
-        .avatar-large { width: 80px; height: 80px; background: var(--primary); color: white; font-size: 2rem; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .user-meta h2 { margin: 0; display: flex; align-items: center; gap: 8px; }
-        .verified-badge { color: var(--primary); font-size: 1.2rem; }
-        .user-meta p { margin: 5px 0 0; color: #64748b; }
-        .tier-badge { font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background: #f1f5f9; color: #64748b; font-weight: 700; text-transform: uppercase; }
-        .tier-pro { background: #e0e7ff; color: var(--primary); }
-
-        /* ACTIVITY LOG */
-        .activity-list { list-style: none; padding: 0; margin: 0; }
-        .activity-item { display: flex; gap: 15px; padding: 15px 0; border-bottom: 1px solid #f1f5f9; }
-        .act-icon { width: 32px; height: 32px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
-        .act-details div { font-weight: 600; font-size: 0.9rem; }
-        .act-time { font-size: 0.8rem; color: #94a3b8; }
-
-        /* FORMS & BUTTONS */
-        .btn { padding: 10px 20px; border-radius: 8px; border: 1px solid transparent; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-outline { background: white; border-color: var(--border); color: var(--text); }
-        .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
-        .btn-danger { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
-        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
-
-        .input-group { margin-bottom: 15px; }
-        .label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: #475569; }
-        .input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; }
-        
-        /* Toggles */
-        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #f8fafc; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
+        /* TOGGLES */
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
         .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--success); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        .section { display: none; animation: fadeIn 0.3s; }
+        /* UTILS */
+        .btn { padding: 8px 14px; border-radius: 8px; border: 1px solid transparent; font-weight: 600; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: white; border-color: var(--border); color: var(--text); }
+        .btn-danger { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
+        
+        .section { display: none; animation: fadeIn 0.2s ease-out; }
         .section.active { display: block; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-        
+
         /* MODAL */
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-box { background: white; padding: 30px; border-radius: 16px; width: 450px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); }
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; padding: 20px; }
+        .modal-box { background: white; padding: 25px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; outline: none; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: -280px; height: 100%; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+            .sidebar.open { transform: translateX(280px); }
+            .sidebar-overlay.open { display: block; }
+            .menu-toggle { display: block; }
+            .user-header { flex-direction: column; text-align: center; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
         <div class="brand"><span>🛡️</span> AdminPanel</div>
         <div class="nav-item active" onclick="nav('dash')">📊 Overview</div>
-        <div class="nav-item" onclick="nav('users')">👥 Account Control</div>
+        <div class="nav-item" onclick="nav('users')">👥 User Control</div>
         <div class="nav-item" onclick="nav('camps')">📢 Campaigns</div>
         <div class="nav-item" onclick="nav('settings')">⚙️ Global Settings</div>
         <div class="nav-item" style="margin-top:auto; color:#ef4444;" onclick="window.location.href='index.html'">🚪 Exit</div>
@@ -97,8 +109,9 @@
 
     <div class="main">
         <div class="header">
-            <div style="font-weight:700;">Admin Command Center</div>
-            <div style="font-size:0.9rem; color:#64748b;">Super Admin</div>
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <div style="font-weight:700;">Command Center</div>
+            <div style="width:24px;"></div>
         </div>
 
         <div class="content-area">
@@ -114,110 +127,40 @@
                         <div class="stat-val" id="st-users">0</div>
                     </div>
                     <div class="card">
-                        <div class="stat-lbl">Storage Load</div>
-                        <div class="stat-val" id="st-storage">0%</div>
+                        <div class="stat-lbl">Data Source</div>
+                        <div class="stat-val" style="font-size:1.2rem; margin-top:12px; color:var(--success);">☁️ Cloud DB</div>
                     </div>
-                </div>
-                
-                <div class="card">
-                    <h3 style="margin-top:0;">System Health</h3>
-                    <p style="color:#64748b;">Database is active and running on LocalStorage.</p>
-                    <button class="btn btn-outline" onclick="nav('users')">Manage Users</button>
                 </div>
             </div>
 
             <div id="tab-users" class="section">
-                <h2>Client Management</h2>
-                
                 <div class="card" id="userCard">
-                    <div class="user-profile-header">
-                        <div class="avatar-large" id="uAvatar">?</div>
-                        <div class="user-meta">
-                            <h2 id="uName">No User <span id="uVerified"></span></h2>
-                            <p id="uEmail">user@example.com</p>
-                            <div style="margin-top:8px;">
-                                <span id="uTier" class="tier-badge">Free Tier</span>
-                                <span id="uStatus" class="tier-badge" style="background:#dcfce7; color:#166534;">Active</span>
-                            </div>
-                        </div>
-                        <div style="margin-left:auto; display:flex; gap:10px;">
-                            <button class="btn btn-outline" onclick="sendEmail()">✉️ Email</button>
-                            <button class="btn btn-outline" onclick="openEditModal()">✏️ Edit</button>
-                        </div>
-                    </div>
-
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div>
-                            <h4 style="margin-top:0; color:#64748b; text-transform:uppercase; font-size:0.75rem;">Account Actions</h4>
-                            
-                            <div class="toggle-row">
-                                <span><strong>Verify Account</strong> (Blue Tick)</span>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="toggleVerify" onchange="updateAccount('verify')">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-
-                            <div class="toggle-row">
-                                <span><strong>Pro Tier</strong> (Unlimited Campaigns)</span>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="toggleTier" onchange="updateAccount('tier')">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-
-                            <div class="toggle-row" style="border-color:#fecaca; background:#fef2f2;">
-                                <span style="color:#b91c1c;"><strong>Suspend Account</strong> (Ban)</span>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="toggleBan" onchange="updateAccount('ban')">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            
-                            <button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="resetPassword()">🔑 Force Password Reset</button>
-                        </div>
-
-                        <div>
-                            <h4 style="margin-top:0; color:#64748b; text-transform:uppercase; font-size:0.75rem;">Activity Log</h4>
-                            <ul class="activity-list" id="activityList">
-                                </ul>
-                        </div>
-                    </div>
+                    <p style="color:#94a3b8; text-align:center;">Loading User Data...</p>
                 </div>
             </div>
 
             <div id="tab-camps" class="section">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h2>Campaign Moderation</h2>
-                    <button class="btn btn-danger" onclick="deleteAll()">Delete All</button>
-                </div>
-                <div class="card">
-                    <table style="width:100%; border-collapse:collapse;">
-                        <thead>
-                            <tr style="text-align:left; border-bottom:1px solid #e2e8f0;">
-                                <th style="padding:10px;">Campaign</th>
-                                <th style="padding:10px;">Client</th>
-                                <th style="padding:10px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="campTable"></tbody>
-                    </table>
+                <div class="card" style="padding:0; overflow:hidden;">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>Image</th><th>Details</th><th>Status</th><th>Action</th></tr>
+                            </thead>
+                            <tbody id="campTable"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <div id="tab-settings" class="section">
-                <h2>Global Settings</h2>
-                <div class="card" style="max-width:600px;">
-                    <div class="input-group">
-                        <label class="label">Announcement Banner</label>
-                        <input type="text" id="siteNotice" class="input" placeholder="Message for homepage...">
-                    </div>
-                    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                <div class="card">
+                    <label style="display:block; margin-bottom:8px; font-weight:600;">Announcement Banner</label>
+                    <input type="text" id="siteNotice" class="input" placeholder="Message for homepage...">
+                    <button class="btn btn-primary" onclick="saveSettings()">Save Banner</button>
                 </div>
-                
-                <div class="card" style="max-width:600px; border-color:#fecaca;">
+                <div class="card" style="border-color:#fecaca;">
                     <h3 style="color:#ef4444; margin-top:0;">Danger Zone</h3>
-                    <button class="btn btn-danger" onclick="factoryReset()">⚠️ Factory Reset System</button>
+                    <button class="btn btn-danger" onclick="factoryReset()">⚠️ Wipe Local Data</button>
                 </div>
             </div>
 
@@ -226,187 +169,162 @@
 
     <div class="modal-overlay" id="editModal">
         <div class="modal-box">
-            <h3>Edit User Details</h3>
-            <div class="input-group">
-                <label class="label">Full Name</label>
-                <input type="text" id="mName" class="input">
-            </div>
-            <div class="input-group">
-                <label class="label">Email Address</label>
-                <input type="text" id="mEmail" class="input">
-            </div>
+            <h3>Edit User</h3>
+            <input type="text" id="mName" class="input" placeholder="Name">
+            <input type="text" id="mEmail" class="input" placeholder="Email">
             <div style="display:flex; justify-content:flex-end; gap:10px;">
                 <button class="btn btn-outline" onclick="document.getElementById('editModal').style.display='none'">Cancel</button>
-                <button class="btn btn-primary" onclick="saveUserEdit()">Save Changes</button>
+                <button class="btn btn-primary" onclick="saveUserEdit()">Save</button>
             </div>
         </div>
     </div>
 
-    <script>
-        // --- DATA LOADING ---
-        let allCamps = JSON.parse(localStorage.getItem('allCampaigns')) || [];
+    <script type="module">
+        import { getAllCampaigns, deleteCampaignCloud } from './db.js';
+
+        // --- GLOBAL VARIABLES (Crucial for module) ---
+        let allCamps = [];
         let user = JSON.parse(localStorage.getItem('clientAccount'));
         let settings = JSON.parse(localStorage.getItem('siteSettings')) || { notice: '' };
 
-        function init() {
+        async function init() {
+            try {
+                // Fetch from Cloud
+                allCamps = await getAllCampaigns();
+            } catch (e) {
+                console.error("Cloud Error:", e);
+                allCamps = []; 
+            }
+            
+            // Refresh UI
             renderStats();
             renderUserCard();
             renderCamps();
             document.getElementById('siteNotice').value = settings.notice || '';
         }
 
-        function nav(id) {
-            document.querySelectorAll('.section').forEach(e=>e.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
-            document.getElementById('tab-'+id).classList.add('active');
-            event.currentTarget.classList.add('active');
-        }
-
-        // --- 1. STATS ---
+        // --- RENDER FUNCTIONS ---
         function renderStats() {
             document.getElementById('st-camps').innerText = allCamps.length;
             document.getElementById('st-users').innerText = user ? 1 : 0;
-            
-            let total=0; for(let x in localStorage)if(localStorage.hasOwnProperty(x))total+=localStorage[x].length*2;
-            const kb=(total/1024).toFixed(2);
-            const perc=Math.min((kb/5000)*100,100).toFixed(1);
-            document.getElementById('st-storage').innerText = perc + "% ("+kb+"KB)";
         }
 
-        // --- 2. USER CRM LOGIC ---
         function renderUserCard() {
             const card = document.getElementById('userCard');
-            if(!user) {
-                card.innerHTML = '<p style="text-align:center; color:#94a3b8;">No registered user found.</p>';
-                return;
-            }
+            if(!user) { card.innerHTML = '<p style="text-align:center;">No registered user.</p>'; return; }
 
-            // Populate Header
-            document.getElementById('uAvatar').innerText = user.name.charAt(0).toUpperCase();
-            document.getElementById('uName').innerHTML = user.name + (user.verified ? ' <span class="verified-badge">✓</span>' : '');
-            document.getElementById('uEmail').innerText = user.email;
-            document.getElementById('uTier').innerText = user.tier === 'pro' ? 'Pro Plan' : 'Free Plan';
-            document.getElementById('uTier').className = user.tier === 'pro' ? 'tier-badge tier-pro' : 'tier-badge';
-            
-            const statusBadge = document.getElementById('uStatus');
-            if(user.banned) { statusBadge.innerText = 'Suspended'; statusBadge.style.background='#fee2e2'; statusBadge.style.color='#ef4444'; }
-            else { statusBadge.innerText = 'Active'; statusBadge.style.background='#dcfce7'; statusBadge.style.color='#166534'; }
-
-            // Populate Toggles
-            document.getElementById('toggleVerify').checked = !!user.verified;
-            document.getElementById('toggleTier').checked = user.tier === 'pro';
-            document.getElementById('toggleBan').checked = !!user.banned;
-
-            // Populate Activity Log (Derived from campaigns)
-            const log = document.getElementById('activityList');
-            log.innerHTML = '';
-            
-            // Default 'Joined' log
-            log.innerHTML += `
-                <li class="activity-item">
-                    <div class="act-icon">👤</div>
-                    <div class="act-details">
-                        <div>Account Created</div>
-                        <div class="act-time">Initial Registration</div>
+            card.innerHTML = `
+                <div class="user-header">
+                    <div class="avatar">${user.name.charAt(0).toUpperCase()}</div>
+                    <div style="flex:1;">
+                        <h2 style="margin:0;">${user.name} ${user.verified ? '✓' : ''}</h2>
+                        <p style="margin:5px 0;">${user.email}</p>
+                        <span class="badge ${user.tier==='pro'?'bg-pro':'bg-free'}">${user.tier==='pro'?'Pro':'Free'}</span>
                     </div>
-                </li>`;
+                    <div>
+                        <button class="btn btn-outline" onclick="openEditModal()">✏️</button>
+                        <button class="btn btn-outline" onclick="sendEmail()">✉️</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="toggle-row">
+                        <span>Verify Account</span>
+                        <label class="toggle-switch"><input type="checkbox" id="tVerify" ${user.verified?'checked':''} onchange="updateAccount('verify')"><span class="slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <span>Pro Tier</span>
+                        <label class="toggle-switch"><input type="checkbox" id="tTier" ${user.tier==='pro'?'checked':''} onchange="updateAccount('tier')"><span class="slider"></span></label>
+                    </div>
+                    <button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="resetPassword()">Reset Password</button>
+                </div>
+            `;
+        }
 
-            // Campaign logs
-            const userCamps = allCamps.filter(c => c.client === user.name);
-            userCamps.forEach(c => {
-                const date = new Date(parseInt(c.id.split('_')[1])).toLocaleDateString();
-                log.innerHTML += `
-                    <li class="activity-item">
-                        <div class="act-icon">🚀</div>
-                        <div class="act-details">
-                            <div>Launched "${c.title}"</div>
-                            <div class="act-time">${date}</div>
-                        </div>
-                    </li>`;
+        function renderCamps() {
+            const tb = document.getElementById('campTable'); 
+            tb.innerHTML = '';
+            if(allCamps.length === 0) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">No Campaigns</td></tr>'; return; }
+
+            allCamps.forEach((c, i) => {
+                tb.innerHTML += `
+                    <tr>
+                        <td><img src="${c.image}" class="thumb"></td>
+                        <td><strong>${c.title}</strong><br><small>${c.client || 'Unknown'}</small></td>
+                        <td><span class="badge bg-green">Active</span></td>
+                        <td><button class="btn btn-danger" onclick="deleteCamp(${i})">Del</button></td>
+                    </tr>`;
             });
         }
 
-        function updateAccount(type) {
-            if(!user) return;
-            if(type === 'verify') user.verified = document.getElementById('toggleVerify').checked;
-            if(type === 'tier') user.tier = document.getElementById('toggleTier').checked ? 'pro' : 'free';
-            if(type === 'ban') user.banned = document.getElementById('toggleBan').checked;
+        // --- WINDOW ATTACHMENTS (Connects HTML to JS) ---
+        
+        window.nav = function(id) {
+            document.querySelectorAll('.section').forEach(e=>e.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active');
             
-            localStorage.setItem('clientAccount', JSON.stringify(user));
-            renderUserCard(); // Refresh UI
-        }
+            // Close mobile menu
+            document.getElementById('sidebar').classList.remove('open');
+            document.querySelector('.sidebar-overlay').classList.remove('open');
+        };
 
-        function sendEmail() {
-            if(user) window.location.href = `mailto:${user.email}?subject=Account%20Update`;
-        }
+        window.toggleSidebar = function() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.querySelector('.sidebar-overlay').classList.toggle('open');
+        };
 
-        function resetPassword() {
+        window.updateAccount = function(type) {
             if(!user) return;
-            const newPass = prompt("Enter new temporary password for this user:");
-            if(newPass) {
-                user.pass = newPass;
-                localStorage.setItem('clientAccount', JSON.stringify(user));
-                alert("Password updated.");
-            }
-        }
+            if(type === 'verify') user.verified = document.getElementById('tVerify').checked;
+            if(type === 'tier') user.tier = document.getElementById('tTier').checked ? 'pro' : 'free';
+            localStorage.setItem('clientAccount', JSON.stringify(user));
+            renderUserCard();
+        };
 
-        // Edit Modal
-        function openEditModal() {
+        window.deleteCamp = async function(i) {
+            if(confirm("Delete this campaign from the Cloud?")) {
+                const id = allCamps[i].id;
+                await deleteCampaignCloud(id);
+                init(); // Refresh
+            }
+        };
+
+        window.sendEmail = function() { if(user) window.location.href = `mailto:${user.email}`; };
+        
+        window.openEditModal = function() {
             if(!user) return;
             document.getElementById('mName').value = user.name;
             document.getElementById('mEmail').value = user.email;
             document.getElementById('editModal').style.display = 'flex';
-        }
-        function saveUserEdit() {
+        };
+
+        window.saveUserEdit = function() {
             user.name = document.getElementById('mName').value;
             user.email = document.getElementById('mEmail').value;
             localStorage.setItem('clientAccount', JSON.stringify(user));
             document.getElementById('editModal').style.display = 'none';
             renderUserCard();
-        }
+        };
 
-        // --- 3. CAMPAIGNS ---
-        function renderCamps() {
-            const tb = document.getElementById('campTable');
-            tb.innerHTML = '';
-            if(allCamps.length===0) { tb.innerHTML='<tr><td colspan="3" style="text-align:center; color:#ccc; padding:20px;">No Data</td></tr>'; return; }
-            
-            allCamps.forEach((c, i) => {
-                tb.innerHTML += `
-                    <tr>
-                        <td style="padding:12px;"><strong>${c.title}</strong></td>
-                        <td>${c.client}</td>
-                        <td><button class="btn btn-danger btn-sm" onclick="delCamp(${i})">Delete</button></td>
-                    </tr>`;
-            });
-        }
-        function delCamp(i) {
-            if(confirm("Delete this campaign?")) {
-                allCamps.splice(i, 1);
-                localStorage.setItem('allCampaigns', JSON.stringify(allCamps));
-                renderCamps(); renderStats();
-            }
-        }
-        function deleteAll() {
-            if(confirm("Delete ALL campaigns?")) {
-                localStorage.removeItem('allCampaigns');
-                location.reload();
-            }
-        }
-
-        // --- 4. SYSTEM ---
-        function saveSettings() {
+        window.saveSettings = function() {
             const val = document.getElementById('siteNotice').value;
             localStorage.setItem('siteSettings', JSON.stringify({ notice: val }));
-            alert("Settings Saved.");
-        }
-        function factoryReset() {
-            if(confirm("CRITICAL: Wipe entire database?")) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
+            alert("Settings Saved!");
+        };
 
+        window.resetPassword = function() {
+            const p = prompt("New Password:");
+            if(p) { user.pass = p; localStorage.setItem('clientAccount', JSON.stringify(user)); alert("Password Updated"); }
+        };
+
+        window.factoryReset = function() {
+            if(confirm("Wipe local data? (Cloud data remains safe)")) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        };
+
+        // Start App
         init();
     </script>
 </body>
