@@ -2,144 +2,181 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Login | PosterBox</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <script src="./db.js"></script> 
-
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { margin:0; font-family:'Plus Jakarta Sans', sans-serif; height:100vh; display:flex; overflow:hidden; }
-        .visual-side { flex:1; background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); display:flex; align-items:center; justify-content:center; color:white; flex-direction:column; padding:40px; }
-        .visual-side h1 { font-size:3rem; margin:0 0 20px 0; }
-        .visual-side p { font-size:1.2rem; opacity:0.9; max-width:400px; text-align:center; line-height:1.6; }
-        .form-side { width:500px; background:white; padding:60px; display:flex; flex-direction:column; justify-content:center; overflow-y:auto; position: relative; }
-        .tabs { display:flex; border-bottom:1px solid #e2e8f0; margin-bottom:30px; }
-        .tab { padding:15px 0; margin-right:20px; cursor:pointer; font-weight:600; color:#64748b; border-bottom:2px solid transparent; transition:0.3s; }
-        .tab.active { color:#4f46e5; border-bottom-color:#4f46e5; }
-        .input-group { margin-bottom:20px; }
-        label { display:block; font-size:0.875rem; font-weight:700; color:#1e293b; margin-bottom:8px; }
-        input { width:100%; padding:14px; border:1px solid #cbd5e1; border-radius:8px; font-size:1rem; outline:none; transition:0.2s; box-sizing:border-box; }
-        input:focus { border-color:#4f46e5; box-shadow:0 0 0 3px rgba(79, 70, 229, 0.1); }
-        .btn { width:100%; padding:16px; background:#4f46e5; color:white; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer; transition:0.2s; margin-top:10px; }
-        .btn:hover { background:#4338ca; }
-        .hidden { display:none; }
-        @media(max-width:900px) { .visual-side { display:none; } .form-side { width:100%; } }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; display: flex; background: white; }
+        
+        /* Left Side (Visual) - Hidden on Mobile */
+        .visual-side { display: none; }
+        
+        /* Right Side (Form) */
+        .form-side { flex: 1; padding: 30px; display: flex; flex-direction: column; justify-content: center; max-width: 100%; overflow-y: auto; }
+        
+        /* Typography */
+        h2 { font-size: 2rem; margin: 0 0 10px 0; color: #0f172a; }
+        p.subtext { color: #64748b; margin: 0 0 30px 0; line-height: 1.5; }
+        
+        /* Tabs */
+        .tabs { display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 25px; }
+        .tab { flex: 1; text-align: center; padding: 15px; cursor: pointer; font-weight: 600; color: #64748b; border-bottom: 2px solid transparent; transition: 0.2s; }
+        .tab.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+        
+        /* Inputs */
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.9rem; color: #334155; }
+        input { width: 100%; padding: 16px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 1rem; outline: none; transition: 0.2s; background: #f8fafc; }
+        input:focus { border-color: #4f46e5; background: white; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+        
+        /* Button */
+        .btn { width: 100%; padding: 18px; background: #4f46e5; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; margin-top: 10px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2); }
+        .btn:active { transform: scale(0.98); }
+        
+        /* Links */
+        .back-link { text-align: center; display: block; margin-top: 30px; color: #64748b; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+        
+        .hidden { display: none; }
+
+        /* Desktop Layout */
+        @media (min-width: 900px) {
+            .visual-side { display: flex; flex: 1; background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); color: white; flex-direction: column; align-items: center; justify-content: center; padding: 60px; text-align: center; }
+            .visual-side h1 { font-size: 3.5rem; margin: 0 0 20px 0; }
+            .visual-side p { font-size: 1.2rem; opacity: 0.9; max-width: 450px; line-height: 1.6; }
+            
+            .form-side { width: 500px; flex: none; border-left: 1px solid #e2e8f0; padding: 60px; }
+        }
     </style>
 </head>
 <body>
 
     <div class="visual-side">
         <h1>PosterBox</h1>
-        <p>Empower your movement with professional campaign tools. Create templates, share links, and go viral.</p>
+        <p>Empower your movement. Design, share, and launch viral campaigns in seconds.</p>
     </div>
 
     <div class="form-side">
-        <div style="margin-bottom:40px;">
-            <h2 style="margin:0; font-size:1.8rem;">Welcome Back</h2>
-            <p style="color:#64748b; margin-top:5px;">Please enter your details to continue.</p>
+        <div>
+            <h2>Welcome Back</h2>
+            <p class="subtext">Please enter your details to access the studio.</p>
         </div>
 
-        <div id="error-msg" style="display:none; padding:15px; background:#fee2e2; color:#ef4444; border-radius:8px; margin-bottom:20px; font-weight:bold;"></div>
-
         <div class="tabs">
-            <div class="tab active" id="tab-login" onclick="window.setMode('login')">Log In</div>
-            <div class="tab" id="tab-signup" onclick="window.setMode('signup')">Create Account</div>
+            <div class="tab active" id="tab-login" onclick="setMode('login')">Log In</div>
+            <div class="tab" id="tab-signup" onclick="setMode('signup')">Sign Up</div>
         </div>
 
         <div id="loginForm">
-            <div class="input-group"><label>Email Address</label><input type="email" id="lEmail" placeholder="email@example.com"></div>
-            <div class="input-group"><label>Password</label><input type="password" id="lPass" placeholder="••••••••"></div>
-            <button class="btn" onclick="window.login()">Access Dashboard</button>
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="lEmail" placeholder="you@example.com">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="lPass" placeholder="••••••••">
+            </div>
+            <button class="btn" onclick="window.login()">Log In</button>
         </div>
 
         <div id="signupForm" class="hidden">
-            <div class="input-group"><label>Organization Name</label><input type="text" id="sName" placeholder="Your Name"></div>
-            <div class="input-group"><label>Email Address</label><input type="email" id="sEmail" placeholder="email@example.com"></div>
-            <div class="input-group"><label>Username</label><input type="text" id="sUser" placeholder="username"></div>
-            <div class="input-group"><label>Password</label><input type="password" id="sPass" placeholder="Create a password"></div>
-            <button class="btn" onclick="window.signup()">Register Organization</button>
+            <div class="input-group">
+                <label>Organization Name</label>
+                <input type="text" id="sName" placeholder="My Organization">
+            </div>
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="sEmail" placeholder="you@example.com">
+            </div>
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="sUser" placeholder="username">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="sPass" placeholder="Create a password">
+            </div>
+            <button class="btn" onclick="window.signup()">Create Account</button>
         </div>
         
-        <div style="margin-top:30px; text-align:center;">
-            <a href="index.html" style="color:#64748b; text-decoration:none; font-size:0.9rem;">← Back to Homepage</a>
-        </div>
+        <a href="index.html" class="back-link">← Back to Homepage</a>
     </div>
 
+    <script src="db.js"></script>
+    
     <script>
-        // DIAGNOSTIC CHECK
-        window.onload = function() {
-            if (typeof window.registerUserCloud !== 'function') {
-                const msg = document.getElementById('error-msg');
-                msg.style.display = 'block';
-                msg.innerText = "CRITICAL ERROR: db.js failed to load. Please check if 'db.js' is in your GitHub repository.";
-            }
-        };
-
+        // Tab Switching
         window.setMode = function(mode) {
             document.getElementById('loginForm').style.display = mode === 'login' ? 'block' : 'none';
             document.getElementById('signupForm').style.display = mode === 'signup' ? 'block' : 'none';
             document.getElementById('tab-login').classList.toggle('active', mode === 'login');
             document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
         }
-
-        window.signup = async function() {
-            const name = document.getElementById('sName').value;
-            const email = document.getElementById('sEmail').value;
-            const user = document.getElementById('sUser').value;
-            const pass = document.getElementById('sPass').value;
-
-            if (!email || !pass) return alert("All fields are required.");
-
-            const btn = document.querySelector('#signupForm .btn');
-            btn.innerText = "Creating...";
-
+        
+        // Login Logic
+        window.login = async function() {
+            const btn = document.querySelector('#loginForm .btn');
+            const oldText = btn.innerText;
+            btn.innerText = "Checking...";
+            
             try {
-                // Check if db.js loaded
-                if(typeof window.registerUserCloud !== 'function') throw new Error("Database not connected. Refresh the page.");
-
-                const acc = { name, email, user, pass, verified: false, tier: 'free', banned: false };
-                const result = await window.registerUserCloud(acc);
+                const r = await window.loginUserCloud(document.getElementById('lEmail').value, document.getElementById('lPass').value);
                 
-                if (result.success) {
-                    localStorage.setItem('clientAccount', JSON.stringify(acc));
+                if(r.success) { 
+                    if (r.user.banned) {
+                        alert("Account Suspended.");
+                        btn.innerText = oldText;
+                        return;
+                    }
+                    localStorage.setItem('clientAccount', JSON.stringify(r.user)); 
                     localStorage.setItem('isLoggedIn', 'true');
-                    window.location.href = 'dashboard.html';
+                    window.location.href = 'dashboard.html'; 
                 } else {
-                    btn.innerText = "Register Organization";
-                    alert("Error: " + result.message);
+                    alert(r.message);
+                    btn.innerText = oldText;
                 }
             } catch (e) {
-                btn.innerText = "Register Organization";
-                alert(e.message);
+                alert("Connection Error. Check db.js loading.");
+                btn.innerText = oldText;
             }
         }
 
-        window.login = async function() {
-            const email = document.getElementById('lEmail').value;
-            const pass = document.getElementById('lPass').value;
-            
-            const btn = document.querySelector('#loginForm .btn');
-            btn.innerText = "Checking...";
+        // Signup Logic
+        window.signup = async function() {
+            const btn = document.querySelector('#signupForm .btn');
+            const oldText = btn.innerText;
+            btn.innerText = "Creating...";
 
             try {
-                if(typeof window.loginUserCloud !== 'function') throw new Error("Database not connected. Refresh the page.");
+                const acc = { 
+                    name: document.getElementById('sName').value, 
+                    email: document.getElementById('sEmail').value, 
+                    user: document.getElementById('sUser').value, 
+                    pass: document.getElementById('sPass').value, 
+                    tier: 'free',
+                    verified: false,
+                    banned: false
+                };
+                
+                if(!acc.email || !acc.pass) return alert("Fill all fields");
 
-                const result = await window.loginUserCloud(email, pass);
-
-                if (result.success) {
-                    if (result.user.banned) return alert("Account Suspended.");
-                    localStorage.setItem('clientAccount', JSON.stringify(result.user));
+                const r = await window.registerUserCloud(acc);
+                
+                if(r.success) { 
+                    localStorage.setItem('clientAccount', JSON.stringify(acc)); 
                     localStorage.setItem('isLoggedIn', 'true');
-                    window.location.href = 'dashboard.html';
+                    window.location.href = 'dashboard.html'; 
                 } else {
-                    btn.innerText = "Access Dashboard";
-                    alert(result.message);
+                    alert(r.message);
+                    btn.innerText = oldText;
                 }
             } catch (e) {
-                btn.innerText = "Access Dashboard";
-                alert(e.message);
+                alert("Connection Error.");
+                btn.innerText = oldText;
             }
         }
     </script>

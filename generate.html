@@ -2,52 +2,73 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Generator | PosterBox</title>
+    
     <link rel="preconnect" href="https://tstxtfkwgljszcklswny.supabase.co">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lobster&family=Montserrat:wght@700&family=Oswald:wght@500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    
     <style>
-        body { margin:0; font-family:'Inter', sans-serif; background:#f3f4f6; display:flex; flex-direction:column; height:100vh; overscroll-behavior: none; }
-        
+        :root { --primary: #4f46e5; --bg: #f3f4f6; --surface: #ffffff; --border: #e5e7eb; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* --- LOADER --- */
         #loader { position: fixed; inset: 0; background: white; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.3s; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top: 4px solid #4f46e5; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        header { background:white; padding:15px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; z-index: 20; }
-        .brand { font-weight:800; font-size:1.2rem; color:#111827; }
-        .btn-back { text-decoration:none; color:#6b7280; font-weight:600; font-size:0.9rem; }
+        /* --- HEADER --- */
+        header { background: white; padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; z-index: 20; flex-shrink: 0; }
+        .brand { font-weight: 800; font-size: 1.1rem; color: #111827; }
+        .btn-cancel { text-decoration: none; color: #64748b; font-weight: 600; font-size: 0.9rem; }
 
-        .container { flex:1; display:flex; flex-direction:row-reverse; overflow:hidden; }
-        .preview { flex:1; background:#e5e7eb; display:flex; align-items:center; justify-content:center; padding:20px; overflow:hidden; position: relative; touch-action: none; }
-        canvas { max-width:100%; max-height:100%; box-shadow:0 20px 40px rgba(0,0,0,0.1); background:white; border-radius:4px; }
-        .inputs { width:400px; background:white; padding:30px; overflow-y:auto; display:flex; flex-direction:column; gap:25px; z-index:10; box-shadow:-5px 0 20px rgba(0,0,0,0.05); }
+        /* --- LAYOUT --- */
+        .app-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         
-        .desc-box { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 15px; font-size: 0.9rem; color: #1e40af; line-height: 1.5; margin-top: 10px; display: none; }
-        .step-title { font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#9ca3af; font-weight:800; margin-bottom:8px; }
-        
-        .upload-card { border:2px dashed #d1d5db; padding:15px; border-radius:12px; cursor:pointer; display:flex; gap:15px; align-items:center; background:#f9fafb; transition:0.2s; }
-        .upload-card:hover { border-color:#4f46e5; background:#eef2ff; }
-        .thumb { width:60px; height:60px; background:#e5e7eb; border-radius:8px; object-fit:cover; }
-        .input-field { width:100%; padding:14px; border:1px solid #d1d5db; border-radius:8px; font-size:1rem; outline:none; }
-        .input-field:focus { border-color:#4f46e5; }
-        
-        .btn-group { margin-top:auto; display:flex; flex-direction:column; gap:10px; }
-        .btn-down { background:#111827; color:white; padding:16px; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:0.2s; }
-        .btn-share { background:#4f46e5; color:white; padding:16px; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:0.2s; }
-        
-        .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; display:none; flex-direction:column; justify-content:center; align-items:center; }
-        #cropBox { flex:1; overflow:hidden; display:flex; justify-content:center; align-items:center; width:100%; background: #000; }
-        #cropActs { padding:20px; display:flex; justify-content:center; gap:15px; background:#111827; width:100%; }
-        .c-btn { padding:12px 25px; border-radius:30px; border:none; cursor:pointer; font-weight:bold; }
+        /* Preview (Top on Mobile) */
+        .preview-area { height: 45%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
+        canvas { max-width: 100%; max-height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); background: white; border-radius: 4px; }
 
-        .share-card { background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3); }
-        .share-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
-        .share-opt { padding:12px; border-radius:8px; text-decoration:none; font-weight:600; color:white; display:flex; align-items:center; justify-content:center; gap:5px; font-size:0.9rem; }
-        .so-wa { background:#25D366; } .so-fb { background:#1877F2; } .so-x { background:#000; } .so-in { background:#0a66c2; }
-        .close-share { margin-top:20px; background:none; border:none; text-decoration:underline; color:#6b7280; cursor:pointer; }
+        /* Controls (Bottom on Mobile) */
+        .controls-area { flex: 1; background: white; border-radius: 20px 20px 0 0; padding: 25px; overflow-y: auto; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); margin-top: -20px; position: relative; z-index: 10; display: flex; flex-direction: column; }
+        
+        h2 { margin: 0 0 5px 0; font-size: 1.4rem; color: #111827; }
+        p.desc { color: #6b7280; margin: 0 0 25px 0; font-size: 0.9rem; line-height: 1.5; }
 
-        @media(max-width:900px) { .container{flex-direction:column;} .inputs{width:100%; height:60%; border-top:1px solid #e5e7eb;} .preview{height:40%;} }
+        /* Inputs */
+        .form-group { margin-bottom: 20px; }
+        .label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .text-input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; outline: none; background: #f9fafb; transition: 0.2s; }
+        .text-input:focus { border-color: var(--primary); background: white; }
+
+        /* Photo Upload */
+        .upload-box { border: 2px dashed var(--border); padding: 12px; border-radius: 12px; cursor: pointer; display: flex; gap: 12px; align-items: center; background: #f9fafb; transition: 0.2s; }
+        .upload-box:active { background: #eef2ff; border-color: var(--primary); }
+        .thumb-preview { width: 50px; height: 50px; background: #e5e7eb; border-radius: 8px; object-fit: cover; }
+        .upload-text { font-size: 0.95rem; font-weight: 600; color: #334155; }
+        .upload-hint { font-size: 0.8rem; color: #9ca3af; }
+
+        /* Action Buttons */
+        .action-bar { margin-top: auto; padding-top: 20px; display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 16px; border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-share { background: var(--primary); color: white; }
+        .btn-down { background: #1f2937; color: white; }
+
+        /* --- DESKTOP OVERRIDE --- */
+        @media (min-width: 900px) {
+            .app-body { flex-direction: row-reverse; }
+            .preview-area { height: 100%; flex: 1; background: #f3f4f6; }
+            .controls-area { width: 420px; flex: none; margin: 0; border-radius: 0; border-right: 1px solid var(--border); box-shadow: none; }
+        }
+
+        /* --- MODALS --- */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: none; flex-direction: column; }
+        .crop-area { flex: 1; overflow: hidden; display: flex; justify-content: center; align-items: center; background: black; }
+        .modal-actions { padding: 20px; background: #1f2937; display: flex; gap: 15px; justify-content: center; }
+        .btn-modal { padding: 10px 20px; border-radius: 30px; border: none; font-weight: 700; cursor: pointer; min-width: 100px; }
     </style>
 </head>
 <body>
@@ -59,36 +80,45 @@
 
     <header>
         <div class="brand">Poster<span style="color:#4f46e5">Box</span></div>
-        <a href="index.html" class="btn-back">Cancel</a>
+        <a href="index.html" class="btn-cancel">Cancel</a>
     </header>
     
-    <div class="container">
-        <div class="inputs" id="formArea">
-            <div><h2 id="cName" style="margin:0; font-size:1.5rem;">...</h2><div id="cDesc" class="desc-box"></div></div>
-            <div id="fields" style="display:flex; flex-direction:column; gap:25px;"></div>
-            <div class="btn-group"><button class="btn-share" onclick="window.sharePoster()"><span>🚀</span> Share Campaign</button><button class="btn-down" onclick="window.download()"><span>⬇</span> Download Image</button></div>
+    <div class="app-body">
+        
+        <div class="preview-area">
+            <canvas id="canvas"></canvas>
         </div>
-        <div class="preview"><canvas id="canvas"></canvas></div>
+
+        <div class="controls-area">
+            <div>
+                <h2 id="cTitle">Loading...</h2>
+                <p class="desc" id="cDesc">Customize your poster below.</p>
+            </div>
+            
+            <div id="formFields">
+                </div>
+
+            <div class="action-bar">
+                <button class="btn btn-share" onclick="window.share()">🚀 Share</button>
+                <button class="btn btn-down" onclick="window.download()">⬇ Save</button>
+            </div>
+        </div>
+
     </div>
 
-    <div id="cropModal" class="modal">
-        <div id="cropBox"><img id="imgToCrop" style="max-width:100%;"></div>
-        <div id="cropActs"><button class="c-btn" style="background:white;" onclick="window.closeCrop()">Cancel</button><button class="c-btn" style="background:#4f46e5; color:white;" onclick="window.applyCrop()">Apply</button></div>
-    </div>
-
-    <div id="shareModal" class="modal">
-        <div class="share-card">
-            <h2 style="margin:0 0 10px 0;">Share</h2>
-            <div class="share-grid"><a id="lnkWa" target="_blank" class="share-opt so-wa">WhatsApp</a><a id="lnkFb" target="_blank" class="share-opt so-fb">Facebook</a><a id="lnkX" target="_blank" class="share-opt so-x">Twitter</a><a id="lnkIn" target="_blank" class="share-opt so-in">LinkedIn</a></div>
-            <div style="margin-top:15px; padding:10px; background:#f3f4f6; border-radius:8px; font-size:0.8rem; word-break:break-all;"><span id="linkDisplay"></span></div>
-            <button class="close-share" onclick="window.closeShare()">Close</button>
+    <div id="cropModal" class="modal-overlay">
+        <div class="crop-area"><img id="imgToCrop" style="max-width:100%;"></div>
+        <div class="modal-actions">
+            <button class="btn-modal" style="background:white; color:black;" onclick="document.getElementById('cropModal').style.display='none'">Cancel</button>
+            <button class="btn-modal" style="background:#4f46e5; color:white;" onclick="window.applyCrop()">Apply</button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="db.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
     <script>
+        // --- SETUP ---
         const id = new URLSearchParams(window.location.search).get('id');
         const cvs = document.getElementById('canvas');
         const ctx = cvs.getContext('2d');
@@ -97,155 +127,185 @@
         let camp = null;
         let cropper, activeId;
 
-        // --- FETCH DATA ---
+        // Force hide loader safety net
+        setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').remove(); }, 6000);
+
+        // --- LOAD DATA ---
         window.getCampaignFromCloud(id).then(loadedCamp => {
-            if (!loadedCamp) { 
-                alert('Campaign not found.'); 
-                window.location.href = 'index.html'; 
-                return; 
-            }
+            if(!loadedCamp) { alert('Campaign not found.'); window.location.href='index.html'; return; }
             camp = loadedCamp;
 
-            // RENDER TEXT
-            document.getElementById('cName').innerText = camp.title;
-            if(camp.desc) { 
-                const d = document.getElementById('cDesc'); d.innerText = camp.desc; d.style.display = 'block'; 
-            }
+            // Render Text
+            document.getElementById('cTitle').innerText = camp.title;
+            if(camp.desc) document.getElementById('cDesc').innerText = camp.desc;
+
+            // Render Inputs
             renderInputs();
 
-            // RENDER IMAGE (Embedded Base64 - Fast & Reliable)
-            bg.src = camp.image;
-            
-            bg.onload = () => {
-                cvs.width = bg.width; cvs.height = bg.height;
-                draw(); 
-                const l = document.getElementById('loader'); 
-                if(l) { l.style.opacity = '0'; setTimeout(()=>l.remove(), 300); }
-            };
-            
-            bg.onerror = () => {
-                // If it fails (rare with base64), show controls anyway
-                const l = document.getElementById('loader'); 
-                if(l) { l.style.opacity = '0'; setTimeout(()=>l.remove(), 300); }
-                alert("Image data corrupted. Try creating a new campaign.");
-            };
-            
             // Load Fonts
             if(camp.elements) {
-                camp.elements.forEach(el => { 
-                    if(el.customFontData){ const f = new FontFace(el.font, `url(${el.customFontData})`); f.load().then(l => document.fonts.add(l)); }
+                camp.elements.forEach(el => {
+                    if(el.customFontData) {
+                        const f = new FontFace(el.font, `url(${el.customFontData})`);
+                        f.load().then(l => document.fonts.add(l));
+                    }
                 });
             }
 
-        }).catch(err => {
-            console.error("System Error:", err);
-            document.getElementById('loadMsg').innerText = "Error loading data.";
+            // Load BG
+            bg.src = camp.image; // Embedded Base64 (Fast)
+            bg.onload = () => {
+                cvs.width = bg.width; 
+                cvs.height = bg.height;
+                draw();
+                // Hide Loader
+                const l = document.getElementById('loader');
+                if(l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 300); }
+            };
         });
 
         function renderInputs() {
-            const div = document.getElementById('fields'); div.innerHTML = '';
-            [...camp.elements].sort((a,b)=>a.y-b.y).forEach(el => {
-                if(el.type === 'photo') {
-                    div.innerHTML += `<div><div class="step-title">Upload Photo</div><label class="upload-card"><img id="thumb_${el.id}" class="thumb"><div style="margin-left:10px;"><div>Choose Image</div><small style="color:#9ca3af">Tap to crop</small></div><input type="file" style="display:none;" accept="image/*" onchange="window.initCrop(event, '${el.id}')"></label></div>`;
-                } else if(el.type === 'input') {
-                    div.innerHTML += `<div><div class="step-title">${el.placeholder}</div><input type="text" class="input-field" placeholder="Type..." oninput="window.txt('${el.id}', this.value)"></div>`;
+            const div = document.getElementById('formFields');
+            div.innerHTML = '';
+            
+            // Sort by vertical position so inputs match visual order
+            [...camp.elements].sort((a,b) => a.y - b.y).forEach(el => {
+                if(el.type === 'input') {
+                    div.innerHTML += `
+                        <div class="form-group">
+                            <span class="label">${el.placeholder}</span>
+                            <input type="text" class="text-input" placeholder="Type here..." oninput="window.txt('${el.id}', this.value)">
+                        </div>`;
+                } else if(el.type === 'photo') {
+                    div.innerHTML += `
+                        <div class="form-group">
+                            <span class="label">Upload Photo</span>
+                            <label class="upload-box">
+                                <img id="thumb_${el.id}" class="thumb-preview" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>">
+                                <div>
+                                    <div class="upload-text">Choose Image</div>
+                                    <div class="upload-hint">Tap to crop & fit</div>
+                                </div>
+                                <input type="file" hidden accept="image/*" onchange="window.initCrop(event, '${el.id}')">
+                            </label>
+                        </div>`;
                 }
             });
         }
 
+        // --- LOGIC ---
         window.txt = function(id, val) { userDat[id] = val; draw(); };
 
         window.initCrop = function(e, id) {
             const f = e.target.files[0]; if(!f) return; activeId = id;
-            const el = camp.elements.find(x => x.id === id);
-            const aspect = el ? (el.w / el.h) : NaN;
-
-            if(typeof Cropper === 'undefined') {
-                const link = document.createElement('link'); link.rel='stylesheet'; link.href='https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css';
-                document.head.appendChild(link);
-                const script = document.createElement('script'); script.src='https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js';
-                script.onload = () => runCrop(f, aspect);
-                document.body.appendChild(script);
-            } else {
-                runCrop(f, aspect);
-            }
-            e.target.value = '';
-        };
-
-        function runCrop(file, aspect) {
-            const r = new FileReader();
-            r.onload = (ev) => { 
-                document.getElementById('imgToCrop').src = ev.target.result; 
-                document.getElementById('cropModal').style.display = 'flex'; 
-                if(cropper) cropper.destroy(); 
-                cropper = new Cropper(document.getElementById('imgToCrop'), { viewMode: 1, aspectRatio: aspect, autoCropArea: 1 }); 
-            };
-            r.readAsDataURL(file);
-        }
-
-        window.applyCrop = function() { 
-            const res = cropper.getCroppedCanvas().toDataURL(); 
-            const img = new Image(); img.src = res; 
-            img.onload = () => { userDat[activeId] = img; document.getElementById('thumb_' + activeId).src = res; draw(); window.closeCrop(); }; 
-        };
-        window.closeCrop = function() { document.getElementById('cropModal').style.display = 'none'; };
-
-        window.sharePoster = async function() {
-            draw(); 
-            const dataUrl = cvs.toDataURL('image/png');
-            const blob = await (await fetch(dataUrl)).blob();
-            const file = new File([blob], "poster.png", { type: "image/png" });
-            const shareData = { title: camp.title, text: "Check this out!", url: window.location.href };
-            if (navigator.canShare && navigator.canShare({ files: [file] })) { 
-                try { await navigator.share({ ...shareData, files: [file] }); } catch (err) {} 
-            } else { window.openShareModal(); }
-        };
-
-        window.openShareModal = function() {
-            const url = encodeURIComponent(window.location.href); 
-            document.getElementById('lnkWa').href = `https://wa.me/?text=${url}`; 
-            document.getElementById('linkDisplay').innerText = window.location.href; 
-            document.getElementById('shareModal').style.display = 'flex';
-        };
-        window.closeShare = function() { document.getElementById('shareModal').style.display = 'none'; };
-
-        window.download = function() { 
-            draw(); setTimeout(() => { const a = document.createElement('a'); a.download = `Poster.jpg`; a.href = cvs.toDataURL('image/jpeg', 0.95); a.click(); }, 50); 
-        };
-
-        function draw() {
-            ctx.clearRect(0, 0, cvs.width, cvs.height); 
             
-            if(bg.complete && bg.naturalHeight !== 0) {
-                ctx.drawImage(bg, 0, 0, cvs.width, cvs.height);
-            }
+            // Find target aspect ratio
+            const el = camp.elements.find(x => x.id === id);
+            const aspect = el ? (el.w / el.h) : 1;
 
-            const s = cvs.width / 450; 
-
-            [...camp.elements].sort((a,b)=>a.zIndex-b.zIndex).forEach(el => {
-                const x = el.x * s, y = el.y * s, w = el.w * s, h = el.h * s; 
-                ctx.save(); 
-                if(el.rot) { const cx=x+w/2; const cy=y+h/2; ctx.translate(cx,cy); ctx.rotate(el.rot*Math.PI/180); ctx.translate(-cx,-cy); }
-                ctx.globalAlpha = el.opacity || 1;
+            const r = new FileReader();
+            r.onload = (ev) => {
+                document.getElementById('imgToCrop').src = ev.target.result;
+                document.getElementById('cropModal').style.display = 'flex';
                 
-                if(el.type === 'photo') {
-                    ctx.beginPath();
-                    if(el.shape === 'circle') { ctx.arc(x + w/2, y + h/2, w/2, 0, Math.PI * 2); } 
-                    else { const r = (el.radius || 0) * s; if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
-                    ctx.fillStyle = el.fill || '#e0e7ff'; ctx.fill(); ctx.closePath(); ctx.clip();
+                if(cropper) cropper.destroy();
+                // Wait for image to load in modal before initializing cropper
+                const img = document.getElementById('imgToCrop');
+                // Small timeout ensures DOM is ready
+                setTimeout(() => {
+                    cropper = new Cropper(img, { viewMode: 1, aspectRatio: aspect, autoCropArea: 1 });
+                }, 100);
+            };
+            r.readAsDataURL(f);
+            e.target.value = ''; // Reset file input
+        };
+
+        window.applyCrop = function() {
+            const res = cropper.getCroppedCanvas().toDataURL();
+            const img = new Image(); img.src = res;
+            img.onload = () => {
+                userDat[activeId] = img;
+                document.getElementById('thumb_' + activeId).src = res;
+                draw();
+                document.getElementById('cropModal').style.display = 'none';
+            };
+        };
+
+        // --- DRAW ---
+        function draw() {
+            ctx.clearRect(0, 0, cvs.width, cvs.height);
+            ctx.drawImage(bg, 0, 0); // Background
+
+            const s = cvs.width / 450; // Scale factor relative to editor width
+
+            if(camp && camp.elements) {
+                // Draw elements in Z-Index order
+                [...camp.elements].sort((a,b) => a.zIndex - b.zIndex).forEach(el => {
+                    const x = el.x * s, y = el.y * s, w = el.w * s, h = el.h * s;
                     
-                    if(userDat[el.id]) ctx.drawImage(userDat[el.id], x, y, w, h);
-                    else { ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.fillRect(x, y, w, h); ctx.fillStyle = "#666"; ctx.font = (14 * s) + "px Inter"; ctx.textAlign = "center"; ctx.fillText("Photo", x + w/2, y + h/2); }
-                } else {
-                    const txt = el.type === 'input' ? (userDat[el.id] || el.placeholder) : el.text;
-                    ctx.font = `${(el.bold?'bold ':'')}${(el.italic?'italic ':'')} ${el.size * s}px ${el.font}`; 
-                    ctx.fillStyle = el.color; if(el.shadow) { ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 4; }
-                    let tx = x; if(el.align === 'center') tx = x + w/2; if(el.align === 'right') tx = x + w; 
-                    ctx.textAlign = el.align; ctx.textBaseline = 'middle'; ctx.fillText(txt, tx, y + h/2);
-                }
-                ctx.restore();
-            });
+                    ctx.save();
+                    
+                    // Rotate
+                    if(el.rot) {
+                        const cx = x + w/2; const cy = y + h/2;
+                        ctx.translate(cx, cy); ctx.rotate(el.rot * Math.PI / 180); ctx.translate(-cx, -cy);
+                    }
+                    
+                    ctx.globalAlpha = el.opacity || 1;
+
+                    if(el.type === 'photo') {
+                        // Shape Mask
+                        ctx.beginPath();
+                        if(el.shape === 'circle') ctx.arc(x + w/2, y + h/2, w/2, 0, Math.PI * 2);
+                        else ctx.rect(x, y, w, h); // Supports simple rect for now
+                        
+                        ctx.clip(); // Everything after this is cropped to shape
+
+                        if(userDat[el.id]) {
+                            ctx.drawImage(userDat[el.id], x, y, w, h);
+                        } else {
+                            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                            ctx.fillRect(x, y, w, h);
+                        }
+                    } else {
+                        // Text
+                        const txt = el.type === 'input' ? (userDat[el.id] || el.placeholder) : el.text;
+                        ctx.font = `${el.size * s}px Inter`; // Fallback font if custom fails
+                        if(el.customFontData) ctx.font = `${el.size * s}px ${el.font}`;
+                        
+                        ctx.fillStyle = el.color || 'black';
+                        ctx.textBaseline = 'middle';
+                        
+                        // Align
+                        let tx = x;
+                        if(el.align === 'center') { tx = x + w/2; ctx.textAlign = 'center'; }
+                        else if(el.align === 'right') { tx = x + w; ctx.textAlign = 'right'; }
+                        else { ctx.textAlign = 'left'; }
+                        
+                        ctx.fillText(txt, tx, y + h/2);
+                    }
+                    ctx.restore();
+                });
+            }
         }
+
+        // --- EXPORT ---
+        window.download = function() {
+            const a = document.createElement('a');
+            a.download = `Poster_${Date.now()}.jpg`;
+            a.href = cvs.toDataURL('image/jpeg', 0.9);
+            a.click();
+        };
+
+        window.share = async function() {
+            const blob = await (await fetch(cvs.toDataURL())).blob();
+            const file = new File([blob], "poster.png", { type: "image/png" });
+            if(navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({ files: [file], title: camp.title });
+            } else {
+                alert("Sharing is not supported on this browser. Please download the image manually.");
+            }
+        };
     </script>
 </body>
 </html>
