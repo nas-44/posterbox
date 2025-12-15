@@ -4,41 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin | PosterBox</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --sidebar: #0f172a; --bg: #f8fafc; --surface: #ffffff;
-            --primary: #4f46e5; --text: #334155; --border: #e2e8f0;
-            --danger: #ef4444; --success: #10b981;
-        }
-
+        :root { --sidebar: #0f172a; --bg: #f8fafc; --surface: #ffffff; --primary: #4f46e5; --text: #334155; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin:0; font-family:'Plus Jakarta Sans', sans-serif; background:var(--bg); color:var(--text); display:flex; height:100vh; overflow:hidden; }
 
-        /* --- SIDEBAR --- */
-        .sidebar { 
-            width: 260px; background: var(--sidebar); color: white; display: flex; flex-direction: column; 
-            padding: 20px; flex-shrink: 0; transition: transform 0.3s ease; z-index: 1000;
-        }
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: var(--sidebar); color: white; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; transition: transform 0.3s ease; z-index: 1000; }
         .brand { font-size: 1.4rem; font-weight: 700; color: #818cf8; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
-        
-        .nav-item { 
-            padding: 14px 16px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; 
-            font-weight: 600; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; gap: 12px; 
-        }
+        .nav-item { padding: 14px 16px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; font-weight: 600; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; gap: 12px; }
         .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
-        .nav-item.active { background: var(--primary); color: white; }
+        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
 
-        /* Overlay */
         .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
 
-        /* --- MAIN --- */
+        /* MAIN */
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         .header { height: 60px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
         .menu-toggle { display: none; font-size: 1.5rem; cursor: pointer; background: none; border: none; color: var(--text); }
         .content-area { flex: 1; padding: 20px; overflow-y: auto; }
 
-        /* CARDS */
+        /* CARDS & STATS */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .card { background: var(--surface); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 20px; }
         .stat-val { font-size: 1.8rem; font-weight: 800; color: var(--sidebar); }
@@ -46,51 +34,31 @@
 
         /* TABLES */
         .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
         th { text-align: left; padding: 12px; background: #f8fafc; color: #64748b; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
         .thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: #eee; vertical-align: middle; margin-right: 10px; }
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
+        .bg-green { background: #dcfce7; color: #166534; }
+        .bg-red { background: #fee2e2; color: #991b1b; }
+        .bg-blue { background: #dbeafe; color: #1e40af; }
+        .bg-gray { background: #f1f5f9; color: #64748b; }
 
-        /* CRM */
-        .user-header { display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px; }
-        .avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; display: grid; place-items: center; font-size: 1.5rem; font-weight: 700; }
-        
-        .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 5px; }
-        .bg-pro { background: #e0e7ff; color: var(--primary); }
-        .bg-free { background: #f1f5f9; color: #64748b; }
-        .bg-green { background: var(--success); color: white; }
-        .bg-gray { background: #94a3b8; color: white; }
+        .btn { padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; font-weight: 600; cursor: pointer; font-size: 0.8rem; }
+        .btn:hover { background: #f1f5f9; }
+        .btn-danger { color: var(--danger); border-color: #fecaca; background: #fef2f2; }
 
-        /* TOGGLES */
-        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
-        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        /* UTILS */
-        .btn { padding: 8px 14px; border-radius: 8px; border: 1px solid transparent; font-weight: 600; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-outline { background: white; border-color: var(--border); color: var(--text); }
-        .btn-danger { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
-        
-        .section { display: none; animation: fadeIn 0.2s ease-out; }
-        .section.active { display: block; }
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-
-        /* MODAL */
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; padding: 20px; }
-        .modal-box { background: white; padding: 25px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; outline: none; }
+        
+        .input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; }
 
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: -280px; height: 100%; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
             .sidebar.open { transform: translateX(280px); }
             .sidebar-overlay.open { display: block; }
             .menu-toggle { display: block; }
-            .user-header { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
@@ -100,10 +68,10 @@
 
     <div class="sidebar" id="sidebar">
         <div class="brand"><span>🛡️</span> AdminPanel</div>
-        <div class="nav-item active" onclick="nav('dash')">📊 Overview</div>
-        <div class="nav-item" onclick="nav('users')">👥 User Control</div>
-        <div class="nav-item" onclick="nav('camps')">📢 Campaigns</div>
-        <div class="nav-item" onclick="nav('settings')">⚙️ Global Settings</div>
+        <div class="nav-item active" id="nav-dash" onclick="window.nav('dash')">📊 Overview</div>
+        <div class="nav-item" id="nav-users" onclick="window.nav('users')">👥 User Database</div>
+        <div class="nav-item" id="nav-camps" onclick="window.nav('camps')">📢 Campaigns</div>
+        <div class="nav-item" id="nav-settings" onclick="window.nav('settings')">⚙️ Settings</div>
         <div class="nav-item" style="margin-top:auto; color:#ef4444;" onclick="window.location.href='index.html'">🚪 Exit</div>
     </div>
 
@@ -119,32 +87,46 @@
             <div id="tab-dash" class="section active">
                 <div class="stats-grid">
                     <div class="card">
-                        <div class="stat-lbl">Total Campaigns</div>
+                        <div class="stat-lbl">Global Campaigns</div>
                         <div class="stat-val" id="st-camps">0</div>
                     </div>
                     <div class="card">
-                        <div class="stat-lbl">Active User</div>
+                        <div class="stat-lbl">Registered Users</div>
                         <div class="stat-val" id="st-users">0</div>
                     </div>
                     <div class="card">
-                        <div class="stat-lbl">Data Source</div>
-                        <div class="stat-val" style="font-size:1.2rem; margin-top:12px; color:var(--success);">☁️ Cloud DB</div>
+                        <div class="stat-lbl">Database Status</div>
+                        <div class="stat-val" style="font-size:1.2rem; margin-top:12px; color:var(--success);">● Cloud Live</div>
                     </div>
                 </div>
             </div>
 
             <div id="tab-users" class="section">
-                <div class="card" id="userCard">
-                    <p style="color:#94a3b8; text-align:center;">Loading User Data...</p>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2>Registered Users</h2>
+                    <button class="btn" onclick="window.init()">🔄 Refresh</button>
                 </div>
-            </div>
-
-            <div id="tab-camps" class="section">
                 <div class="card" style="padding:0; overflow:hidden;">
                     <div class="table-wrapper">
                         <table>
                             <thead>
-                                <tr><th>Image</th><th>Details</th><th>Status</th><th>Action</th></tr>
+                                <tr><th>User Info</th><th>Tier</th><th>Status</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody id="userTable">
+                                <tr><td colspan="4" style="text-align:center; padding:20px;">Loading Cloud Data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-camps" class="section">
+                <h2>Global Campaigns</h2>
+                <div class="card" style="padding:0; overflow:hidden;">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>Campaign</th><th>Owner</th><th>Status</th><th>Action</th></tr>
                             </thead>
                             <tbody id="campTable"></tbody>
                         </table>
@@ -153,179 +135,160 @@
             </div>
 
             <div id="tab-settings" class="section">
-                <div class="card">
-                    <label style="display:block; margin-bottom:8px; font-weight:600;">Announcement Banner</label>
-                    <input type="text" id="siteNotice" class="input" placeholder="Message for homepage...">
-                    <button class="btn btn-primary" onclick="saveSettings()">Save Banner</button>
-                </div>
-                <div class="card" style="border-color:#fecaca;">
-                    <h3 style="color:#ef4444; margin-top:0;">Danger Zone</h3>
-                    <button class="btn btn-danger" onclick="factoryReset()">⚠️ Wipe Local Data</button>
+                <h2>Global Settings</h2>
+                <div class="card" style="max-width:600px;">
+                    <label style="display:block; margin-bottom:8px; font-weight:600;">Homepage Banner</label>
+                    <input type="text" id="siteNotice" class="input" placeholder="e.g. 'Maintenance Mode Active'">
+                    <button class="btn" onclick="window.saveSettings()">Save Setting</button>
                 </div>
             </div>
 
         </div>
     </div>
 
-    <div class="modal-overlay" id="editModal">
-        <div class="modal-box">
-            <h3>Edit User</h3>
-            <input type="text" id="mName" class="input" placeholder="Name">
-            <input type="text" id="mEmail" class="input" placeholder="Email">
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn btn-outline" onclick="document.getElementById('editModal').style.display='none'">Cancel</button>
-                <button class="btn btn-primary" onclick="saveUserEdit()">Save</button>
-            </div>
-        </div>
-    </div>
+    <script src="db.js"></script>
 
-    <script type="module">
-        import { getAllCampaigns, deleteCampaignCloud } from './db.js';
-
-        // --- GLOBAL VARIABLES (Crucial for module) ---
+    <script>
+        // Global State
         let allCamps = [];
-        let user = JSON.parse(localStorage.getItem('clientAccount'));
+        let allUsers = [];
         let settings = JSON.parse(localStorage.getItem('siteSettings')) || { notice: '' };
 
-        async function init() {
+        // INITIALIZE
+        window.init = async function() {
             try {
-                // Fetch from Cloud
-                allCamps = await getAllCampaigns();
+                // Fetch Cloud Data
+                const camps = await window.getAllCampaigns();
+                const users = await window.getAllUsersCloud();
+                
+                allCamps = camps || [];
+                allUsers = users || [];
+                
+                // Sort users (newest first)
+                allUsers.reverse(); 
+
+                renderStats();
+                renderUsers();
+                renderCamps();
+                document.getElementById('siteNotice').value = settings.notice || '';
             } catch (e) {
-                console.error("Cloud Error:", e);
-                allCamps = []; 
+                console.error("Cloud Error", e);
+                // Fail silently or show a toast
             }
-            
-            // Refresh UI
-            renderStats();
-            renderUserCard();
-            renderCamps();
-            document.getElementById('siteNotice').value = settings.notice || '';
         }
 
-        // --- RENDER FUNCTIONS ---
+        // --- NAVIGATION LOGIC ---
+        window.nav = function(id) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(e => e.classList.remove('active'));
+            // Show target section
+            document.getElementById('tab-' + id).classList.add('active');
+
+            // Update Sidebar Active State
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            document.getElementById('nav-' + id).classList.add('active');
+
+            // Close Mobile Menu
+            document.getElementById('sidebar').classList.remove('open');
+            document.querySelector('.sidebar-overlay').classList.remove('open');
+        }
+
+        window.toggleSidebar = function() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.querySelector('.sidebar-overlay').classList.toggle('open');
+        }
+
+        // --- RENDERERS ---
         function renderStats() {
             document.getElementById('st-camps').innerText = allCamps.length;
-            document.getElementById('st-users').innerText = user ? 1 : 0;
+            document.getElementById('st-users').innerText = allUsers.length;
         }
 
-        function renderUserCard() {
-            const card = document.getElementById('userCard');
-            if(!user) { card.innerHTML = '<p style="text-align:center;">No registered user.</p>'; return; }
+        function renderUsers() {
+            const tb = document.getElementById('userTable');
+            tb.innerHTML = '';
+            
+            if(allUsers.length === 0) {
+                tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">No Users Found</td></tr>';
+                return;
+            }
 
-            card.innerHTML = `
-                <div class="user-header">
-                    <div class="avatar">${user.name.charAt(0).toUpperCase()}</div>
-                    <div style="flex:1;">
-                        <h2 style="margin:0;">${user.name} ${user.verified ? '✓' : ''}</h2>
-                        <p style="margin:5px 0;">${user.email}</p>
-                        <span class="badge ${user.tier==='pro'?'bg-pro':'bg-free'}">${user.tier==='pro'?'Pro':'Free'}</span>
-                    </div>
-                    <div>
-                        <button class="btn btn-outline" onclick="openEditModal()">✏️</button>
-                        <button class="btn btn-outline" onclick="sendEmail()">✉️</button>
-                    </div>
-                </div>
-                <div>
-                    <div class="toggle-row">
-                        <span>Verify Account</span>
-                        <label class="toggle-switch"><input type="checkbox" id="tVerify" ${user.verified?'checked':''} onchange="updateAccount('verify')"><span class="slider"></span></label>
-                    </div>
-                    <div class="toggle-row">
-                        <span>Pro Tier</span>
-                        <label class="toggle-switch"><input type="checkbox" id="tTier" ${user.tier==='pro'?'checked':''} onchange="updateAccount('tier')"><span class="slider"></span></label>
-                    </div>
-                    <button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="resetPassword()">Reset Password</button>
-                </div>
-            `;
+            allUsers.forEach(u => {
+                const isPro = u.tier === 'pro';
+                const isBanned = u.banned === true;
+                const isVerified = u.verified === true;
+
+                tb.innerHTML += `
+                    <tr>
+                        <td>
+                            <div style="font-weight:700;">${u.name} ${isVerified ? '🔹' : ''}</div>
+                            <div style="font-size:0.8rem; color:#64748b;">${u.email}</div>
+                        </td>
+                        <td>
+                            <span class="badge ${isPro?'bg-blue':'bg-gray'}">${isPro?'PRO':'FREE'}</span>
+                        </td>
+                        <td>
+                            <span class="badge ${isBanned?'bg-red':'bg-green'}">${isBanned?'SUSPENDED':'ACTIVE'}</span>
+                        </td>
+                        <td>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn" onclick="window.toggleUser('${u.email}', 'verified', ${!isVerified})">${isVerified?'Unverify':'Verify'}</button>
+                                <button class="btn" onclick="window.toggleUser('${u.email}', 'tier', '${isPro?'free':'pro'}')">${isPro?'Downgrade':'Upgrade'}</button>
+                                <button class="btn btn-danger" onclick="window.toggleUser('${u.email}', 'banned', ${!isBanned})">${isBanned?'Unban':'Ban'}</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
         }
 
         function renderCamps() {
-            const tb = document.getElementById('campTable'); 
+            const tb = document.getElementById('campTable');
             tb.innerHTML = '';
             if(allCamps.length === 0) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">No Campaigns</td></tr>'; return; }
 
             allCamps.forEach((c, i) => {
                 tb.innerHTML += `
                     <tr>
-                        <td><img src="${c.image}" class="thumb"></td>
+                        <td><img src="${c.image}" class="thumb" crossorigin="anonymous"></td>
                         <td><strong>${c.title}</strong><br><small>${c.client || 'Unknown'}</small></td>
                         <td><span class="badge bg-green">Active</span></td>
-                        <td><button class="btn btn-danger" onclick="deleteCamp(${i})">Del</button></td>
+                        <td><button class="btn btn-danger" onclick="window.deleteCamp(${i})">Del</button></td>
                     </tr>`;
             });
         }
 
-        // --- WINDOW ATTACHMENTS (Connects HTML to JS) ---
-        
-        window.nav = function(id) {
-            document.querySelectorAll('.section').forEach(e=>e.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
-            document.getElementById('tab-'+id).classList.add('active');
+        // --- ACTIONS ---
+        window.toggleUser = async function(email, key, value) {
+            if(!confirm(`Change ${key} to ${value} for ${email}?`)) return;
             
-            // Close mobile menu
-            document.getElementById('sidebar').classList.remove('open');
-            document.querySelector('.sidebar-overlay').classList.remove('open');
-        };
-
-        window.toggleSidebar = function() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.querySelector('.sidebar-overlay').classList.toggle('open');
-        };
-
-        window.updateAccount = function(type) {
-            if(!user) return;
-            if(type === 'verify') user.verified = document.getElementById('tVerify').checked;
-            if(type === 'tier') user.tier = document.getElementById('tTier').checked ? 'pro' : 'free';
-            localStorage.setItem('clientAccount', JSON.stringify(user));
-            renderUserCard();
-        };
-
-        window.deleteCamp = async function(i) {
-            if(confirm("Delete this campaign from the Cloud?")) {
-                const id = allCamps[i].id;
-                await deleteCampaignCloud(id);
-                init(); // Refresh
+            const updates = {};
+            updates[key] = value;
+            
+            const success = await window.updateUserCloud(email, updates);
+            
+            if(success) {
+                await window.init(); // Refresh data
+            } else {
+                alert("Update failed. Check console.");
             }
         };
 
-        window.sendEmail = function() { if(user) window.location.href = `mailto:${user.email}`; };
-        
-        window.openEditModal = function() {
-            if(!user) return;
-            document.getElementById('mName').value = user.name;
-            document.getElementById('mEmail').value = user.email;
-            document.getElementById('editModal').style.display = 'flex';
-        };
-
-        window.saveUserEdit = function() {
-            user.name = document.getElementById('mName').value;
-            user.email = document.getElementById('mEmail').value;
-            localStorage.setItem('clientAccount', JSON.stringify(user));
-            document.getElementById('editModal').style.display = 'none';
-            renderUserCard();
+        window.deleteCamp = async function(i) {
+            if(confirm("Delete this campaign globally?")) {
+                const id = allCamps[i].id;
+                await window.deleteCampaignCloud(id);
+                window.init();
+            }
         };
 
         window.saveSettings = function() {
             const val = document.getElementById('siteNotice').value;
             localStorage.setItem('siteSettings', JSON.stringify({ notice: val }));
-            alert("Settings Saved!");
+            alert("Banner updated.");
         };
 
-        window.resetPassword = function() {
-            const p = prompt("New Password:");
-            if(p) { user.pass = p; localStorage.setItem('clientAccount', JSON.stringify(user)); alert("Password Updated"); }
-        };
-
-        window.factoryReset = function() {
-            if(confirm("Wipe local data? (Cloud data remains safe)")) {
-                localStorage.clear();
-                window.location.reload();
-            }
-        };
-
-        // Start App
-        init();
+        // Start
+        window.init();
     </script>
 </body>
 </html>

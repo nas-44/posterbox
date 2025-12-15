@@ -4,21 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Generator | PosterBox</title>
+    <link rel="preconnect" href="https://tstxtfkwgljszcklswny.supabase.co">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lobster&family=Montserrat:wght@700&family=Oswald:wght@500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
         body { margin:0; font-family:'Inter', sans-serif; background:#f3f4f6; display:flex; flex-direction:column; height:100vh; overscroll-behavior: none; }
         
+        #loader { position: fixed; inset: 0; background: white; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.3s; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top: 4px solid #4f46e5; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         header { background:white; padding:15px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; z-index: 20; }
         .brand { font-weight:800; font-size:1.2rem; color:#111827; }
         .btn-back { text-decoration:none; color:#6b7280; font-weight:600; font-size:0.9rem; }
 
-        /* LAYOUT */
         .container { flex:1; display:flex; flex-direction:row-reverse; overflow:hidden; }
-        
         .preview { flex:1; background:#e5e7eb; display:flex; align-items:center; justify-content:center; padding:20px; overflow:hidden; position: relative; touch-action: none; }
-        canvas { max-width:100%; max-height:100%; box-shadow:0 20px 40px rgba(0,0,0,0.1); background:white; border-radius:4px; cursor: pointer; }
-        
+        canvas { max-width:100%; max-height:100%; box-shadow:0 20px 40px rgba(0,0,0,0.1); background:white; border-radius:4px; }
         .inputs { width:400px; background:white; padding:30px; overflow-y:auto; display:flex; flex-direction:column; gap:25px; z-index:10; box-shadow:-5px 0 20px rgba(0,0,0,0.05); }
         
         .desc-box { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 15px; font-size: 0.9rem; color: #1e40af; line-height: 1.5; margin-top: 10px; display: none; }
@@ -32,17 +34,13 @@
         
         .btn-group { margin-top:auto; display:flex; flex-direction:column; gap:10px; }
         .btn-down { background:#111827; color:white; padding:16px; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:0.2s; }
-        .btn-down:hover { background:#000; }
         .btn-share { background:#4f46e5; color:white; padding:16px; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:0.2s; }
-        .btn-share:hover { background:#4338ca; box-shadow:0 5px 15px rgba(79, 70, 229, 0.3); }
-
-        /* MODALS */
+        
         .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; display:none; flex-direction:column; justify-content:center; align-items:center; }
-        #cropBox { flex:1; overflow:hidden; display:flex; justify-content:center; align-items:center; width:100%; }
+        #cropBox { flex:1; overflow:hidden; display:flex; justify-content:center; align-items:center; width:100%; background: #000; }
         #cropActs { padding:20px; display:flex; justify-content:center; gap:15px; background:#111827; width:100%; }
         .c-btn { padding:12px 25px; border-radius:30px; border:none; cursor:pointer; font-weight:bold; }
 
-        /* Share Modal */
         .share-card { background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3); }
         .share-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
         .share-opt { padding:12px; border-radius:8px; text-decoration:none; font-weight:600; color:white; display:flex; align-items:center; justify-content:center; gap:5px; font-size:0.9rem; }
@@ -54,6 +52,11 @@
 </head>
 <body>
 
+    <div id="loader">
+        <div class="spinner"></div>
+        <p id="loadMsg" style="margin-top:15px; font-weight:600; color:#6b7280;">Loading Campaign...</p>
+    </div>
+
     <header>
         <div class="brand">Poster<span style="color:#4f46e5">Box</span></div>
         <a href="index.html" class="btn-back">Cancel</a>
@@ -61,258 +64,188 @@
     
     <div class="container">
         <div class="inputs" id="formArea">
-            <div><h2 id="cName" style="margin:0; font-size:1.5rem;">Loading...</h2><div id="cDesc" class="desc-box"></div></div>
+            <div><h2 id="cName" style="margin:0; font-size:1.5rem;">...</h2><div id="cDesc" class="desc-box"></div></div>
             <div id="fields" style="display:flex; flex-direction:column; gap:25px;"></div>
-            <div class="btn-group"><button class="btn-share" onclick="sharePoster()"><span>🚀</span> Share Campaign</button><button class="btn-down" onclick="download()"><span>⬇</span> Download Image</button></div>
+            <div class="btn-group"><button class="btn-share" onclick="window.sharePoster()"><span>🚀</span> Share Campaign</button><button class="btn-down" onclick="window.download()"><span>⬇</span> Download Image</button></div>
         </div>
         <div class="preview"><canvas id="canvas"></canvas></div>
     </div>
 
     <div id="cropModal" class="modal">
         <div id="cropBox"><img id="imgToCrop" style="max-width:100%;"></div>
-        <div id="cropActs"><button class="c-btn" style="background:white;" onclick="closeCrop()">Cancel</button><button class="c-btn" style="background:#4f46e5; color:white;" onclick="applyCrop()">Apply</button></div>
+        <div id="cropActs"><button class="c-btn" style="background:white;" onclick="window.closeCrop()">Cancel</button><button class="c-btn" style="background:#4f46e5; color:white;" onclick="window.applyCrop()">Apply</button></div>
     </div>
 
     <div id="shareModal" class="modal">
         <div class="share-card">
-            <h2 style="margin:0 0 10px 0;">Share this Campaign</h2><p style="color:#6b7280; font-size:0.9rem; margin:0;">Help us spread the word!</p>
-            <div class="share-grid"><a id="lnkWa" target="_blank" class="share-opt so-wa">WhatsApp</a><a id="lnkFb" target="_blank" class="share-opt so-fb">Facebook</a><a id="lnkX" target="_blank" class="share-opt so-x">X / Twitter</a><a id="lnkIn" target="_blank" class="share-opt so-in">LinkedIn</a></div>
-            <div style="margin-top:15px; padding:10px; background:#f3f4f6; border-radius:8px; font-size:0.8rem; color:#666; word-break:break-all;"><span id="linkDisplay"></span></div>
-            <button class="close-share" onclick="closeShare()">Close</button>
+            <h2 style="margin:0 0 10px 0;">Share</h2>
+            <div class="share-grid"><a id="lnkWa" target="_blank" class="share-opt so-wa">WhatsApp</a><a id="lnkFb" target="_blank" class="share-opt so-fb">Facebook</a><a id="lnkX" target="_blank" class="share-opt so-x">Twitter</a><a id="lnkIn" target="_blank" class="share-opt so-in">LinkedIn</a></div>
+            <div style="margin-top:15px; padding:10px; background:#f3f4f6; border-radius:8px; font-size:0.8rem; word-break:break-all;"><span id="linkDisplay"></span></div>
+            <button class="close-share" onclick="window.closeShare()">Close</button>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <script type="module">
-        import { getCampaignFromCloud } from './db.js';
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="db.js"></script>
 
+    <script>
         const id = new URLSearchParams(window.location.search).get('id');
-        
-        // --- GLOBAL STATE ---
         const cvs = document.getElementById('canvas');
         const ctx = cvs.getContext('2d');
         const userDat = {}; 
         const bg = new Image();
         let camp = null;
-        
-        // Interaction vars
-        let selId=null, isDragging=false, isResizing=false, isPinching=false;
-        let resizeHandle=null, dragStart={x:0,y:0}, initialEl={}, initialPinchDist=0;
         let cropper, activeId;
 
-        // --- INIT FROM CLOUD ---
-        getCampaignFromCloud(id).then(loadedCamp => {
-            if (!loadedCamp) {
-                alert('Campaign not found. Please check the URL.');
-                window.location.href = 'index.html';
-                return;
+        // --- FETCH DATA ---
+        window.getCampaignFromCloud(id).then(loadedCamp => {
+            if (!loadedCamp) { 
+                alert('Campaign not found.'); 
+                window.location.href = 'index.html'; 
+                return; 
             }
             camp = loadedCamp;
 
-            // UI Text
+            // RENDER TEXT
             document.getElementById('cName').innerText = camp.title;
             if(camp.desc) { 
-                const d = document.getElementById('cDesc'); 
-                d.innerText = camp.desc; d.style.display = 'block'; 
+                const d = document.getElementById('cDesc'); d.innerText = camp.desc; d.style.display = 'block'; 
             }
+            renderInputs();
 
-            // Load Custom Fonts
+            // RENDER IMAGE (Embedded Base64 - Fast & Reliable)
+            bg.src = camp.image;
+            
+            bg.onload = () => {
+                cvs.width = bg.width; cvs.height = bg.height;
+                draw(); 
+                const l = document.getElementById('loader'); 
+                if(l) { l.style.opacity = '0'; setTimeout(()=>l.remove(), 300); }
+            };
+            
+            bg.onerror = () => {
+                // If it fails (rare with base64), show controls anyway
+                const l = document.getElementById('loader'); 
+                if(l) { l.style.opacity = '0'; setTimeout(()=>l.remove(), 300); }
+                alert("Image data corrupted. Try creating a new campaign.");
+            };
+            
+            // Load Fonts
             if(camp.elements) {
                 camp.elements.forEach(el => { 
-                    if(el.customFontData){ 
-                        const f = new FontFace(el.font, `url(${el.customFontData})`); 
-                        f.load().then(l => document.fonts.add(l)); 
-                    }
+                    if(el.customFontData){ const f = new FontFace(el.font, `url(${el.customFontData})`); f.load().then(l => document.fonts.add(l)); }
                 });
             }
 
-            // Load Background
-            bg.crossOrigin = "Anonymous"; // Crucial for cloud images
-            bg.src = camp.image;
-            bg.onload = () => {
-                cvs.width = bg.width; 
-                cvs.height = bg.height;
-                draw(); 
-                renderInputs();
-            };
+        }).catch(err => {
+            console.error("System Error:", err);
+            document.getElementById('loadMsg').innerText = "Error loading data.";
         });
 
-        // --- RENDER UI ---
         function renderInputs() {
-            const div = document.getElementById('fields');
-            div.innerHTML = ''; // Clear first
+            const div = document.getElementById('fields'); div.innerHTML = '';
             [...camp.elements].sort((a,b)=>a.y-b.y).forEach(el => {
                 if(el.type === 'photo') {
-                    // Note: Use style="display:none" for best mobile compatibility
-                    div.innerHTML += `<div><div class="step-title">Upload Photo</div><label class="upload-card"><img id="thumb_${el.id}" class="thumb"><div style="margin-left:10px;"><div>Choose Image</div><small style="color:#9ca3af">Tap to crop</small></div><input type="file" style="display:none;" accept="image/*" onchange="initCrop(event, '${el.id}')"></label></div>`;
+                    div.innerHTML += `<div><div class="step-title">Upload Photo</div><label class="upload-card"><img id="thumb_${el.id}" class="thumb"><div style="margin-left:10px;"><div>Choose Image</div><small style="color:#9ca3af">Tap to crop</small></div><input type="file" style="display:none;" accept="image/*" onchange="window.initCrop(event, '${el.id}')"></label></div>`;
                 } else if(el.type === 'input') {
-                    div.innerHTML += `<div><div class="step-title">${el.placeholder}</div><input type="text" class="input-field" placeholder="Type here..." oninput="txt('${el.id}', this.value)"></div>`;
+                    div.innerHTML += `<div><div class="step-title">${el.placeholder}</div><input type="text" class="input-field" placeholder="Type..." oninput="window.txt('${el.id}', this.value)"></div>`;
                 }
             });
         }
 
-        // --- EXPORT FUNCTIONS TO WINDOW (For HTML Buttons) ---
         window.txt = function(id, val) { userDat[id] = val; draw(); };
 
         window.initCrop = function(e, id) {
             const f = e.target.files[0]; if(!f) return; activeId = id;
+            const el = camp.elements.find(x => x.id === id);
+            const aspect = el ? (el.w / el.h) : NaN;
+
+            if(typeof Cropper === 'undefined') {
+                const link = document.createElement('link'); link.rel='stylesheet'; link.href='https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css';
+                document.head.appendChild(link);
+                const script = document.createElement('script'); script.src='https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js';
+                script.onload = () => runCrop(f, aspect);
+                document.body.appendChild(script);
+            } else {
+                runCrop(f, aspect);
+            }
+            e.target.value = '';
+        };
+
+        function runCrop(file, aspect) {
             const r = new FileReader();
             r.onload = (ev) => { 
                 document.getElementById('imgToCrop').src = ev.target.result; 
                 document.getElementById('cropModal').style.display = 'flex'; 
                 if(cropper) cropper.destroy(); 
-                cropper = new Cropper(document.getElementById('imgToCrop'), {viewMode: 1}); 
+                cropper = new Cropper(document.getElementById('imgToCrop'), { viewMode: 1, aspectRatio: aspect, autoCropArea: 1 }); 
             };
-            r.readAsDataURL(f); e.target.value = '';
-        };
+            r.readAsDataURL(file);
+        }
 
         window.applyCrop = function() { 
             const res = cropper.getCroppedCanvas().toDataURL(); 
             const img = new Image(); img.src = res; 
-            img.onload = () => { 
-                userDat[activeId] = img; 
-                document.getElementById('thumb_' + activeId).src = res; 
-                draw(); 
-                window.closeCrop(); 
-            }; 
+            img.onload = () => { userDat[activeId] = img; document.getElementById('thumb_' + activeId).src = res; draw(); window.closeCrop(); }; 
         };
-        
         window.closeCrop = function() { document.getElementById('cropModal').style.display = 'none'; };
 
         window.sharePoster = async function() {
-            selId = null; draw(); // Clear selection box before saving
+            draw(); 
             const dataUrl = cvs.toDataURL('image/png');
             const blob = await (await fetch(dataUrl)).blob();
             const file = new File([blob], "poster.png", { type: "image/png" });
-            const shareData = { title: camp.title, text: `Create your poster for ${camp.title}!`, url: window.location.href };
-            
+            const shareData = { title: camp.title, text: "Check this out!", url: window.location.href };
             if (navigator.canShare && navigator.canShare({ files: [file] })) { 
-                try { await navigator.share({ ...shareData, files: [file] }); } 
-                catch (err) { console.log('Share cancelled'); } 
-            } else { 
-                window.openShareModal(); 
-            }
+                try { await navigator.share({ ...shareData, files: [file] }); } catch (err) {} 
+            } else { window.openShareModal(); }
         };
 
         window.openShareModal = function() {
             const url = encodeURIComponent(window.location.href); 
-            const txt = encodeURIComponent(`Create your poster for ${camp.title}!`);
-            document.getElementById('lnkWa').href = `https://wa.me/?text=${txt}%20${url}`; 
-            document.getElementById('lnkFb').href = `https://www.facebook.com/sharer/sharer.php?u=${url}`; 
-            document.getElementById('lnkX').href = `https://twitter.com/intent/tweet?url=${url}&text=${txt}`; 
-            document.getElementById('lnkIn').href = `https://www.linkedin.com/shareArticle?mini=true&url=${url}`; 
+            document.getElementById('lnkWa').href = `https://wa.me/?text=${url}`; 
             document.getElementById('linkDisplay').innerText = window.location.href; 
             document.getElementById('shareModal').style.display = 'flex';
         };
-
         window.closeShare = function() { document.getElementById('shareModal').style.display = 'none'; };
 
         window.download = function() { 
-            selId = null; draw(); 
-            setTimeout(() => { 
-                const a = document.createElement('a'); 
-                a.download = `Poster_${camp.title}.jpg`; 
-                a.href = cvs.toDataURL('image/jpeg', 0.95); 
-                a.click(); 
-            }, 50); 
+            draw(); setTimeout(() => { const a = document.createElement('a'); a.download = `Poster.jpg`; a.href = cvs.toDataURL('image/jpeg', 0.95); a.click(); }, 50); 
         };
 
-        // --- DRAWING ENGINE ---
         function draw() {
             ctx.clearRect(0, 0, cvs.width, cvs.height); 
-            ctx.drawImage(bg, 0, 0, cvs.width, cvs.height);
-            const s = cvs.width / 450; // Base scale relative to editor
+            
+            if(bg.complete && bg.naturalHeight !== 0) {
+                ctx.drawImage(bg, 0, 0, cvs.width, cvs.height);
+            }
+
+            const s = cvs.width / 450; 
 
             [...camp.elements].sort((a,b)=>a.zIndex-b.zIndex).forEach(el => {
                 const x = el.x * s, y = el.y * s, w = el.w * s, h = el.h * s; 
-                ctx.save(); ctx.globalAlpha = el.opacity || 1;
+                ctx.save(); 
+                if(el.rot) { const cx=x+w/2; const cy=y+h/2; ctx.translate(cx,cy); ctx.rotate(el.rot*Math.PI/180); ctx.translate(-cx,-cy); }
+                ctx.globalAlpha = el.opacity || 1;
                 
                 if(el.type === 'photo') {
-                    // Safe Shape Drawing
                     ctx.beginPath();
-                    if(el.shape === 'circle') {
-                        ctx.arc(x + w/2, y + h/2, w/2, 0, Math.PI * 2);
-                    } else {
-                        // Default to rect with radius
-                        const r = (el.radius || 0) * s;
-                        if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
-                        else ctx.rect(x, y, w, h);
-                    }
-                    
-                    ctx.fillStyle = el.fill || '#e0e7ff'; 
-                    ctx.fill(); 
-                    ctx.closePath(); ctx.clip();
+                    if(el.shape === 'circle') { ctx.arc(x + w/2, y + h/2, w/2, 0, Math.PI * 2); } 
+                    else { const r = (el.radius || 0) * s; if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+                    ctx.fillStyle = el.fill || '#e0e7ff'; ctx.fill(); ctx.closePath(); ctx.clip();
                     
                     if(userDat[el.id]) ctx.drawImage(userDat[el.id], x, y, w, h);
-                    else { 
-                        ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.fillRect(x, y, w, h); 
-                        ctx.fillStyle = "#666"; ctx.font = (14 * s) + "px Inter"; 
-                        ctx.textAlign = "center"; ctx.fillText("Photo", x + w/2, y + h/2); 
-                    }
+                    else { ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.fillRect(x, y, w, h); ctx.fillStyle = "#666"; ctx.font = (14 * s) + "px Inter"; ctx.textAlign = "center"; ctx.fillText("Photo", x + w/2, y + h/2); }
                 } else {
                     const txt = el.type === 'input' ? (userDat[el.id] || el.placeholder) : el.text;
                     ctx.font = `${(el.bold?'bold ':'')}${(el.italic?'italic ':'')} ${el.size * s}px ${el.font}`; 
-                    ctx.fillStyle = el.color; 
-                    if(el.shadow) { ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 4; }
-                    let tx = x; 
-                    if(el.align === 'center') tx = x + w/2; 
-                    if(el.align === 'right') tx = x + w; 
-                    ctx.textAlign = el.align; ctx.textBaseline = 'middle'; 
-                    ctx.fillText(txt, tx, y + h/2);
+                    ctx.fillStyle = el.color; if(el.shadow) { ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 4; }
+                    let tx = x; if(el.align === 'center') tx = x + w/2; if(el.align === 'right') tx = x + w; 
+                    ctx.textAlign = el.align; ctx.textBaseline = 'middle'; ctx.fillText(txt, tx, y + h/2);
                 }
                 ctx.restore();
-
-                // Draw Selection Box
-                if (selId === el.id) {
-                    ctx.save(); ctx.strokeStyle = "#4f46e5"; ctx.lineWidth = 2 * s; 
-                    ctx.setLineDash([5 * s, 5 * s]); ctx.strokeRect(x, y, w, h);
-                    if(!('ontouchstart' in window)) { 
-                        const hs = 15 * s; ctx.fillStyle = "white"; ctx.setLineDash([]); 
-                        ctx.fillRect(x + w - hs/2, y + h - hs/2, hs, hs); 
-                        ctx.strokeRect(x + w - hs/2, y + h - hs/2, hs, hs); 
-                    }
-                    ctx.restore();
-                }
             });
         }
-
-        // --- INTERACTION ---
-        function getPtrPos(e) { 
-            const r = cvs.getBoundingClientRect(); 
-            const cx = e.touches ? e.touches[0].clientX : e.clientX; 
-            const cy = e.touches ? e.touches[0].clientY : e.clientY; 
-            const mult = cvs.width / r.width; 
-            return { x: (cx - r.left) * mult, y: (cy - r.top) * mult }; 
-        }
-
-        const handleStart = (e) => {
-            if(e.type === 'touchstart') e.preventDefault();
-            if (e.touches && e.touches.length === 2) { isPinching = true; const t1 = e.touches[0]; const t2 = e.touches[1]; initialPinchDist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY); if (selId) initialEl = { ...camp.elements.find(x => x.id === selId) }; return; }
-            const m = getPtrPos(e); const s = cvs.width / 450;
-            if (selId && !e.touches) { const el = camp.elements.find(x => x.id === selId); const ex = el.x*s, ey = el.y*s, ew = el.w*s, eh = el.h*s, hs = 15*s; if (hitTest(m.x, m.y, ex+ew-hs, ey+eh-hs, hs*2)) { startResize('br', m, el); return; } }
-            const clicked = [...camp.elements].sort((a,b)=>b.zIndex-a.zIndex).find(el => { const x=el.x*s, y=el.y*s, w=el.w*s, h=el.h*s; return (m.x>=x && m.x<=x+w && m.y>=y && m.y<=y+h); });
-            if (clicked) { selId = clicked.id; isDragging = true; dragStart = m; initialEl = { ...clicked }; draw(); } else { selId = null; draw(); }
-        };
-
-        const handleMove = (e) => {
-            if (!isDragging && !isResizing && !isPinching) return;
-            if(e.type === 'touchmove') e.preventDefault();
-            if (isPinching && selId && e.touches.length === 2) { const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); const scale = dist / initialPinchDist; const el = camp.elements.find(x => x.id === selId); el.w = Math.max(20, initialEl.w * scale); el.h = Math.max(20, initialEl.h * scale); draw(); return; }
-            const m = getPtrPos(e); const s = cvs.width / 450; const el = camp.elements.find(x => x.id === selId); if(!el) return;
-            const dx = (m.x - dragStart.x) / s; const dy = (m.y - dragStart.y) / s;
-            if (isDragging) { el.x = initialEl.x + dx; el.y = initialEl.y + dy; } else if (isResizing) { el.w = Math.max(20, initialEl.w + dx); el.h = Math.max(20, initialEl.h + dy); }
-            draw();
-        };
-
-        const handleEnd = () => { isDragging = false; isResizing = false; isPinching = false; };
-        
-        cvs.addEventListener('mousedown', handleStart); cvs.addEventListener('touchstart', handleStart, {passive:false});
-        window.addEventListener('mousemove', handleMove); window.addEventListener('touchmove', handleMove, {passive:false});
-        window.addEventListener('mouseup', handleEnd); window.addEventListener('touchend', handleEnd);
-
-        function hitTest(mx,my,x,y,s) { return (mx>=x && mx<=x+s && my>=y && my<=y+s); }
-        function startResize(h,m,el) { isResizing=true; resizeHandle=h; dragStart=m; initialEl={...el}; }
-
     </script>
 </body>
 </html>

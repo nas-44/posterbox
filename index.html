@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PosterBox | Viral Campaign Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #4f46e5; --primary-dark: #4338ca; --secondary: #64748b; --dark: #0f172a; --light: #f8fafc; --white: #ffffff; --border: #e2e8f0; --shadow: 0 10px 30px -10px rgba(0,0,0,0.1); }
@@ -121,9 +122,9 @@
         <p class="copyright">&copy; 2025 PosterBox Inc. Built for Changemakers.</p>
     </footer>
 
-    <script type="module">
-        import { getAllCampaigns } from './db.js';
+    <script src="db.js"></script>
 
+    <script>
         // 1. Load Local Settings (For Banner)
         const settings = JSON.parse(localStorage.getItem('siteSettings'));
         if(settings && settings.notice) {
@@ -135,10 +136,15 @@
         // 2. Fetch & Render from Cloud
         let activeCamps = [];
         
-        getAllCampaigns().then(allCamps => {
+        window.getAllCampaigns().then(allCamps => {
             // Filter inactive/deleted
             activeCamps = allCamps.filter(c => c.active !== false);
             renderGrid(activeCamps);
+            
+            // Stats
+            if(activeCamps.length > 0) {
+                 document.getElementById('count-posters').innerText = (12540 + activeCamps.length).toLocaleString();
+            }
         }).catch(err => {
             console.error(err);
             document.getElementById('grid').innerHTML = `<div style="text-align:center; padding:40px;">Failed to load campaigns.</div>`;
@@ -177,7 +183,7 @@
             });
         }
 
-        // 3. Attach Search Function to Window
+        // 3. Attach Search Function
         window.filterCampaigns = function() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const filtered = activeCamps.filter(c => 

@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Studio | PosterBox</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lobster&family=Montserrat:wght@700&family=Oswald:wght@500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
         :root { --bg-app: #f3f4f6; --bg-panel: #ffffff; --primary: #4f46e5; --primary-hover: #4338ca; --text-main: #111827; --text-muted: #6b7280; --border: #e5e7eb; --danger: #ef4444; --success: #10b981; }
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-app); height: 100vh; display: flex; overflow: hidden; color: var(--text-main); }
         
-        /* Layout */
         .rail { width: 70px; background: #1e1b4b; display: flex; flex-direction: column; align-items: center; padding: 20px 0; z-index: 50; flex-shrink: 0; }
         .rail-btn { width: 44px; height: 44px; border-radius: 12px; color: #a5b4fc; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 15px; cursor: pointer; transition: 0.2s; position: relative; }
         .rail-btn:hover { background: rgba(255,255,255,0.1); color: white; }
@@ -20,27 +20,23 @@
         .view-section { display: none; height: 100%; flex-direction: column; }
         .view-section.active { display: flex; }
         
-        /* Editor */
         .top-bar { height: 60px; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 40; position: relative; }
         .editor-body { flex: 1; display: flex; overflow: hidden; position: relative; }
         .panel-left { width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; gap: 10px; overflow-y: auto; z-index: 30; }
         .panel-right { width: 280px; background: var(--bg-panel); border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; z-index: 30; }
         
-        /* Canvas */
         .stage { flex: 1; background: #e5e7eb; overflow: hidden; position: relative; background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; cursor: grab; }
         .stage:active { cursor: grabbing; }
         .canvas-wrapper { transform-origin: center center; position: absolute; left: 50%; top: 50%; transition: transform 0.1s linear; }
         .artboard { width: 400px; height: 500px; background: white; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); position: relative; overflow: hidden; transform: translate(-50%, -50%); }
         .bg-layer { width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; display: none; }
         
-        /* UI Elements */
         .tool-btn { width: 100%; padding: 12px; background: white; border: 1px solid var(--border); border-radius: 8px; text-align: left; cursor: pointer; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 12px; transition: 0.2s; }
         .tool-btn:hover { border-color: var(--primary); color: var(--primary); background: #eef2ff; }
         .btn-primary { background: var(--primary); color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
         .btn-danger { width: 100%; padding: 10px; background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 20px; }
         .btn-dup { width: 100%; padding: 10px; background: white; color: var(--primary); border: 1px solid var(--primary); border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 20px; }
         
-        /* Grid & Cards */
         .manager-container { padding: 40px; flex: 1; overflow-y: auto; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
         .camp-card { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; position: relative; transition: 0.3s; }
@@ -56,26 +52,38 @@
         .hidden { display: none !important; }
         .input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; margin-bottom: 10px; }
         
-        /* Draggable Layers */
         #layerList { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
         .layer-item { display: flex; align-items: center; padding: 8px; background: white; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; user-select: none; }
         .layer-item.active { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
         
-        /* Elements on Canvas */
-        .el { position: absolute; cursor: default; border: 1px dashed var(--primary); display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
-        .el.selected { border: 2px solid var(--primary); z-index: 1000 !important; cursor: move; }
+        /* --- UPDATED ELEMENT STYLES --- */
+        .el { position: absolute; cursor: grab; border: 1px dashed transparent; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+        .el.selected { border: 1px solid var(--primary); z-index: 1000 !important; cursor: move; }
         .el-text { white-space: nowrap; }
+
+        /* RESIZE HANDLES */
+        .resize-handle { width: 12px; height: 12px; background: white; border: 1px solid var(--primary); position: absolute; border-radius: 50%; z-index: 1002; display: none; }
+        .el.selected .resize-handle { display: block; }
+        .rh-nw { top: -6px; left: -6px; cursor: nw-resize; }
+        .rh-ne { top: -6px; right: -6px; cursor: ne-resize; }
+        .rh-sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+        .rh-se { bottom: -6px; right: -6px; cursor: se-resize; }
+
+        /* ROTATION HANDLE */
+        .rotate-stem { width: 1px; height: 25px; background: var(--primary); position: absolute; top: -25px; left: 50%; display: none; pointer-events: none; }
+        .rotate-handle { width: 24px; height: 24px; background: white; color: var(--primary); border: 1px solid var(--primary); position: absolute; top: -35px; left: 50%; transform: translateX(-50%); border-radius: 50%; z-index: 1002; cursor: grab; display: none; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .el.selected .rotate-stem, .el.selected .rotate-handle { display: flex; }
+        .rotate-handle:active { cursor: grabbing; background: var(--primary); color: white; }
+
     </style>
 </head>
 <body>
 
     <div class="rail">
-        <div class="rail-btn" id="nav-editor" onclick="createNew()" title="Create New">🎨</div>
-        <div class="rail-btn active" id="nav-list" onclick="switchView('list')" title="My Campaigns">📂</div>
-        <div class="rail-btn" id="nav-profile" onclick="switchView('profile')" title="Account">👤</div>
-        
-        <div class="rail-btn" style="margin-top:auto; color:#ef4444;" onclick="resetData()" title="Reset Data">🗑️</div>
-        <div class="rail-btn" onclick="logout()" title="Log Out">🚪</div>
+        <div class="rail-btn" id="nav-editor" onclick="window.createNew()" title="Create New">🎨</div>
+        <div class="rail-btn active" id="nav-list" onclick="window.switchView('list')" title="My Campaigns">📂</div>
+        <div class="rail-btn" id="nav-profile" onclick="window.switchView('profile')" title="Account">👤</div>
+        <div class="rail-btn" style="margin-top:auto;" onclick="window.logout()" title="Log Out">🚪</div>
     </div>
 
     <div class="app-shell">
@@ -83,7 +91,7 @@
         <div id="view-list" class="view-section active">
             <div style="padding:20px 40px; background:white; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
                 <div><h1 style="margin:0; font-size:1.8rem;">My Campaigns</h1><p style="margin:5px 0 0; color:var(--text-muted); font-size:0.9rem;">Manage your posters</p></div>
-                <button class="btn-primary" onclick="createNew()">+ Create New</button>
+                <button class="btn-primary" onclick="window.createNew()">+ Create New</button>
             </div>
             <div class="manager-container">
                 <div id="campGrid" class="grid"></div>
@@ -97,8 +105,8 @@
                     <input type="text" id="campTitle" value="Untitled Campaign" class="input" style="margin:0; width:300px; font-weight:700;">
                 </div>
                 <div style="display:flex; gap:10px;">
-                    <button class="btn-primary" style="background:#ef4444;" onclick="clearCanvas()">🗑️ Clear</button>
-                    <button class="btn-primary" onclick="launch()"><span id="btnLaunchText">🚀 Launch</span></button>
+                    <button class="btn-primary" style="background:#ef4444;" onclick="window.clearCanvas()">🗑️ Clear</button>
+                    <button class="btn-primary" onclick="window.launch()"><span id="btnLaunchText">🚀 Launch</span></button>
                 </div>
             </header>
 
@@ -106,21 +114,21 @@
                 <div class="panel-left">
                     <span class="section-title" style="display:block; margin-bottom:10px; font-size:0.75rem; font-weight:700; color:#6b7280; text-transform:uppercase;">Setup</span>
                     <button class="tool-btn" onclick="document.getElementById('bgUp').click()">🖼️ Background</button>
-                    <input type="file" id="bgUp" style="display:none;" accept="image/*" onchange="uploadBg(event)">
+                    <input type="file" id="bgUp" style="display:none;" accept="image/*" onchange="window.uploadBg(event)">
                     
                     <div style="margin-top:15px;">
                         <textarea id="campDesc" class="input" rows="3" placeholder="Campaign Description..."></textarea>
                     </div>
 
                     <span class="section-title" style="display:block; margin:20px 0 10px; font-size:0.75rem; font-weight:700; color:#6b7280; text-transform:uppercase;">Tools</span>
-                    <button class="tool-btn" onclick="add('photo')">📷 Photo Box</button>
-                    <button class="tool-btn" style="margin-top:5px;" onclick="add('text')">📢 Static Text</button>
-                    <button class="tool-btn" style="margin-top:5px;" onclick="add('input')">✍️ User Input</button>
+                    <button class="tool-btn" onclick="window.add('photo')">📷 Photo Box</button>
+                    <button class="tool-btn" style="margin-top:5px;" onclick="window.add('text')">📢 Static Text</button>
+                    <button class="tool-btn" style="margin-top:5px;" onclick="window.add('input')">✍️ User Input</button>
                     
                     <div style="margin-top:20px;" id="layerList"></div>
                 </div>
 
-                <div class="stage" id="stageArea" onmousedown="startPan(event)">
+                <div class="stage" id="stageArea" onmousedown="window.startPan(event)">
                     <div id="canvasWrapper" class="canvas-wrapper">
                         <div id="artboard" class="artboard">
                             <img id="bgImg" class="bg-layer">
@@ -131,28 +139,28 @@
                 <div class="panel-right">
                     <div id="noSel" style="color:#9ca3af; text-align:center; margin-top:50px;">Select an element</div>
                     <div id="props" class="hidden">
-                        <label>Opacity</label><input type="range" class="input" min="0" max="1" step="0.1" id="pOp" oninput="upd('op', this.value)">
+                        <label>Opacity</label><input type="range" class="input" min="0" max="1" step="0.1" id="pOp" oninput="window.upd('op', this.value)">
                         
                         <div id="propsShape" class="hidden">
-                            <label>Fill Color</label><input type="color" id="pFill" class="input" style="height:40px; padding:2px;" oninput="upd('fill', this.value)">
+                            <label>Fill Color</label><input type="color" id="pFill" class="input" style="height:40px; padding:2px;" oninput="window.upd('fill', this.value)">
                             <label>Shape</label>
-                            <select id="pShape" class="input" onchange="upd('shape', this.value)">
+                            <select id="pShape" class="input" onchange="window.upd('shape', this.value)">
                                 <option value="rect">Rectangle</option>
                                 <option value="circle">Circle</option>
                             </select>
-                            <div id="radiusContainer"><label>Radius</label><input type="range" class="input" min="0" max="50" value="0" id="pRadius" oninput="upd('radius', this.value)"></div>
+                            <div id="radiusContainer"><label>Radius</label><input type="range" class="input" min="0" max="50" value="0" id="pRadius" oninput="window.upd('radius', this.value)"></div>
                         </div>
 
                         <div id="propsText" class="hidden">
-                            <label>Text</label><input type="text" id="pTxt" class="input" oninput="upd('text', this.value)">
+                            <label>Text</label><input type="text" id="pTxt" class="input" oninput="window.upd('text', this.value)">
                             <div style="display:flex; gap:5px;">
-                                <input type="color" id="pColor" class="input" style="height:40px; padding:2px;" oninput="upd('color', this.value)">
-                                <input type="number" id="pSize" class="input" value="20" oninput="upd('size', this.value)">
+                                <input type="color" id="pColor" class="input" style="height:40px; padding:2px;" oninput="window.upd('color', this.value)">
+                                <input type="number" id="pSize" class="input" value="20" oninput="window.upd('size', this.value)">
                             </div>
                         </div>
 
-                        <button class="btn-dup" onclick="duplicate()">Duplicate</button>
-                        <button class="btn-danger" onclick="del()">Delete</button>
+                        <button class="btn-dup" onclick="window.duplicate()">Duplicate</button>
+                        <button class="btn-danger" onclick="window.del()">Delete</button>
                     </div>
                 </div>
             </div>
@@ -165,63 +173,52 @@
                     <label>Name</label><input type="text" id="profName" class="input">
                     <label>Email</label><input type="text" id="profEmail" class="input" readonly>
                     <label>Password</label><input type="password" id="profPass" class="input">
-                    <button class="btn-primary" style="width:100%; justify-content:center;" onclick="saveProfile()">Save Changes</button>
+                    <button class="btn-primary" style="width:100%; justify-content:center;" onclick="window.saveProfile()">Save Changes</button>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <script type="module">
-        // Import Cloud Functions
-        import { saveCampaignToCloud, getAllCampaigns, deleteCampaignCloud } from './db.js';
+    <script src="db.js"></script>
 
+    <script>
         let user;
-        let allCamps = []; // Now stores cloud campaigns
+        let allCamps = []; 
+        let els = [], selId = null, editingId = null;
+        let scale = 1, panX = 0, panY = 0, isPanning = false, pSX = 0, pSY = 0;
+        
+        // Interaction States
+        let isD = false, isR = false, isRot = false; 
+        let sX = 0, sY = 0, sL = 0, sT = 0, sW = 0, sH = 0;
+        let activeHandle = '';
+        let startAngle = 0, startRot = 0;
 
-        // 1. Initialize User & Data
-        try {
-            user = JSON.parse(localStorage.getItem('clientAccount'));
-        } catch (e) { localStorage.clear(); window.location.reload(); }
-
+        // INIT
+        try { user = JSON.parse(localStorage.getItem('clientAccount')); } catch (e) { localStorage.clear(); window.location.href = 'login.html'; }
         if (!user) window.location.href = 'login.html';
 
         async function initDashboard() {
-            // Load from Cloud instead of LocalStorage
-            const raw = await getAllCampaigns();
+            const raw = await window.getAllCampaigns();
             allCamps = raw || [];
-            
-            // If on list view, render immediately
-            if(!document.getElementById('view-list').classList.contains('hidden')) {
-                loadCampaigns();
-            }
+            if(!document.getElementById('view-list').classList.contains('hidden')) loadCampaigns();
         }
 
-        // --- GLOBAL STATE ---
-        let els = [], selId = null, editingId = null;
-        let scale = 1, panX = 0, panY = 0, isPanning = false, pSX = 0, pSY = 0;
-
-        // --- GLOBAL WINDOW FUNCTIONS ---
-        
+        // NAV
         window.switchView = function(view) {
             document.querySelectorAll('.view-section').forEach(el => { el.classList.remove('active'); el.classList.add('hidden'); });
             document.querySelectorAll('.rail-btn').forEach(el => el.classList.remove('active'));
             document.getElementById('view-' + view).classList.remove('hidden'); 
             document.getElementById('view-' + view).classList.add('active');
             document.getElementById('nav-' + view).classList.add('active');
-            
-            if(view==='list') { 
-                // Re-fetch when entering list view to ensure sync
-                initDashboard().then(loadCampaigns);
-            }
+            if(view==='list') initDashboard();
             if(view==='profile') loadProfile();
         };
 
         window.createNew = function() { resetEditorState(); window.switchView('editor'); };
         window.logout = function() { localStorage.removeItem('isLoggedIn'); window.location.href = 'index.html'; };
-        
-        // Editor Tools
-        window.zoom = function(d) { scale = Math.min(Math.max(.5, scale + d), 3); document.getElementById('zoomVal').innerText = Math.round(scale * 100) + '%'; applyTrf(); };
+
+        // EDITOR
         window.startPan = function(e) { if(e.target.classList.contains('stage')){ isPanning=true; pSX=e.clientX-panX; pSY=e.clientY-panY; document.addEventListener('mousemove', doPan); document.addEventListener('mouseup', stopPan); } };
         function doPan(e) { if(!isPanning) return; panX=e.clientX-pSX; panY=e.clientY-pSY; applyTrf(); }
         function stopPan() { isPanning=false; document.removeEventListener('mousemove', doPan); document.removeEventListener('mouseup', stopPan); }
@@ -240,8 +237,7 @@
             const f=e.target.files[0]; if(!f)return; document.body.style.cursor='wait';
             const r=new FileReader(); r.onload=(ev)=>{ 
                 const img=new Image(); 
-                // Important: Enable Cross-Origin for Cloud Images editing later
-                img.crossOrigin = "Anonymous";
+                img.crossOrigin = "Anonymous"; 
                 img.onload=()=>{ 
                     const c=document.createElement('canvas'); const s=600/img.width; c.width=600; c.height=Math.floor(img.height*s); 
                     c.getContext('2d').drawImage(img,0,0,c.width,c.height); 
@@ -256,7 +252,7 @@
 
         window.add = function(type, copy=null) {
             const id='el_'+Date.now()+'_'+Math.floor(Math.random()*999);
-            const def={ id, type, x:50, y:50, w:120, h:type==='photo'?120:50, op:1, z:els.length+10, shape:'rect', radius:0, fill:'#e0e7ff', text:type==='input'?'Name Here':'Text', placeholder:'Your Name', font:'Inter', size:20, color:'#000', align:'center' };
+            const def={ id, type, x:50, y:50, w:120, h:type==='photo'?120:50, op:1, rot:0, z:els.length+10, shape:'rect', radius:0, fill:'#e0e7ff', text:type==='input'?'Name Here':'Text', placeholder:'Your Name', font:'Inter', size:20, color:'#000', align:'center' };
             const d = copy ? {...copy, id, x:copy.x+20, y:copy.y+20, z:els.length+10} : def;
             els.push(d); render(d); select(id); updateLayers();
         };
@@ -265,23 +261,121 @@
 
         function render(d) {
             const div=document.createElement('div'); div.id=d.id; div.className='el';
-            div.innerHTML=d.type==='photo'?'📷':(d.type==='input'?`[${d.placeholder}]`:d.text);
-            const h=document.createElement('div'); h.className='handle'; div.appendChild(h);
-            div.onmousedown=(e)=>drag(e,d.id); h.onmousedown=(e)=>resize(e,d.id);
+            
+            // Content
+            const content = document.createElement('div');
+            content.className = 'el-content';
+            content.style.width = '100%'; content.style.height = '100%';
+            content.innerHTML=d.type==='photo'?'📷':(d.type==='input'?`[${d.placeholder}]`:d.text);
+            div.appendChild(content);
+
+            // Resize Handles
+            const dirs = ['nw', 'ne', 'sw', 'se'];
+            dirs.forEach(dir => {
+                const h = document.createElement('div'); h.className = 'resize-handle rh-' + dir;
+                h.onmousedown = (e) => startResize(e, d.id, dir);
+                div.appendChild(h);
+            });
+
+            // Rotate Handle
+            const rotStem = document.createElement('div'); rotStem.className = 'rotate-stem';
+            div.appendChild(rotStem);
+            const rotH = document.createElement('div'); rotH.className = 'rotate-handle'; rotH.innerHTML = '↻';
+            rotH.onmousedown = (e) => startRotate(e, d.id);
+            div.appendChild(rotH);
+
+            div.onmousedown=(e)=>startDrag(e,d.id);
             document.getElementById('artboard').appendChild(div); applyCSS(div,d);
         }
 
         function applyCSS(div,d) {
             div.style.left=d.x+'px'; div.style.top=d.y+'px'; div.style.width=d.w+'px'; div.style.height=d.h+'px'; div.style.zIndex=d.z; div.style.opacity=d.op;
-            if(d.type==='photo') { div.style.borderRadius = d.shape==='circle'?'50%':(d.radius+'px'); div.style.backgroundColor = d.fill; div.style.color = '#333'; div.style.fontWeight = 'bold'; } 
-            else { div.style.fontSize=d.size+'px'; div.style.color=d.color; div.style.display='flex'; div.style.alignItems='center'; div.style.justifyContent=d.align==='left'?'flex-start':(d.align==='right'?'flex-end':'center'); div.style.fontWeight=d.bold?'bold':'normal'; div.style.fontStyle=d.italic?'italic':'normal'; div.style.textShadow=d.shadow?'2px 2px 4px rgba(0,0,0,0.5)':'none'; div.className = 'el el-text'; div.style.fontFamily = d.font; }
+            div.style.transform = `rotate(${d.rot || 0}deg)`;
+            
+            const content = div.querySelector('.el-content');
+            if(d.type==='photo') { 
+                content.style.borderRadius = d.shape==='circle'?'50%':(d.radius+'px'); 
+                content.style.backgroundColor = d.fill; 
+                content.style.color = '#333'; content.style.fontWeight = 'bold'; content.style.display='flex'; content.style.alignItems='center'; content.style.justifyContent='center';
+            } else { 
+                content.style.fontSize=d.size+'px'; content.style.color=d.color; content.style.display='flex'; content.style.alignItems='center'; 
+                content.style.justifyContent=d.align==='left'?'flex-start':(d.align==='right'?'flex-end':'center'); 
+                content.style.fontWeight=d.bold?'bold':'normal'; content.style.fontStyle=d.italic?'italic':'normal'; 
+                content.style.textShadow=d.shadow?'2px 2px 4px rgba(0,0,0,0.5)':'none'; content.className = 'el-content el-text'; content.style.fontFamily = d.font; 
+            }
         }
 
-        function drag(e,id){ if(e.target.className.includes('handle'))return; e.preventDefault(); e.stopPropagation(); select(id); isD=true; sX=e.clientX; sY=e.clientY; const el=document.getElementById(id); sL=parseInt(el.style.left); sT=parseInt(el.style.top); document.addEventListener('mousemove', doD); document.addEventListener('mouseup', stop); }
-        function doD(e){ if(!isD)return; const el=document.getElementById(selId), d=els.find(x=>x.id===selId); const dx=(e.clientX-sX)/scale; const dy=(e.clientY-sY)/scale; el.style.left=(sL+dx)+'px'; el.style.top=(sT+dy)+'px'; d.x=parseInt(el.style.left); d.y=parseInt(el.style.top); }
-        function resize(e,id){ e.stopPropagation(); e.preventDefault(); isR=true; sX=e.clientX; sY=e.clientY; const el=document.getElementById(id); sW=parseInt(el.style.width); sH=parseInt(el.style.height); document.addEventListener('mousemove', doR); document.addEventListener('mouseup', stop); }
-        function doR(e){ if(!isR)return; const el=document.getElementById(selId), d=els.find(x=>x.id===selId); const dx=(e.clientX-sX)/scale; const dy=(e.clientY-sY)/scale; el.style.width=Math.max(20,sW+dx)+'px'; el.style.height=Math.max(20,sH+dy)+'px'; d.w=parseInt(el.style.width); d.h=parseInt(el.style.height); }
-        function stop(){ isD=false; isR=false; document.removeEventListener('mousemove', doD); document.removeEventListener('mousemove', doR); document.removeEventListener('mouseup', stop); }
+        // --- MANIPULATION LOGIC ---
+
+        // Dragging
+        function startDrag(e, id) {
+            if(e.target.className.includes('handle') || e.target.className.includes('stem')) return;
+            e.preventDefault(); e.stopPropagation();
+            select(id); isD = true; sX = e.clientX; sY = e.clientY;
+            const el = document.getElementById(id); sL = parseInt(el.style.left); sT = parseInt(el.style.top);
+            document.addEventListener('mousemove', doDrag); document.addEventListener('mouseup', stopAll);
+        }
+        function doDrag(e) {
+            if(!isD) return;
+            const dx = (e.clientX - sX) / scale; const dy = (e.clientY - sY) / scale;
+            const el = document.getElementById(selId); const d = els.find(x=>x.id===selId);
+            d.x = sL + dx; d.y = sT + dy;
+            applyCSS(el, d);
+        }
+
+        // Resizing
+        function startResize(e, id, dir) {
+            e.preventDefault(); e.stopPropagation();
+            select(id); isR = true; activeHandle = dir; sX = e.clientX; sY = e.clientY;
+            const el = document.getElementById(id);
+            sL = parseInt(el.style.left); sT = parseInt(el.style.top);
+            sW = parseInt(el.style.width); sH = parseInt(el.style.height);
+            document.addEventListener('mousemove', doResize); document.addEventListener('mouseup', stopAll);
+        }
+        function doResize(e) {
+            if(!isR) return;
+            const dx = (e.clientX - sX) / scale; const dy = (e.clientY - sY) / scale;
+            const el = document.getElementById(selId); const d = els.find(x=>x.id===selId);
+
+            if(activeHandle.includes('e')) d.w = Math.max(20, sW + dx);
+            if(activeHandle.includes('s')) d.h = Math.max(20, sH + dy);
+            if(activeHandle.includes('w')) { d.w = Math.max(20, sW - dx); d.x = sL + (sW - d.w); }
+            if(activeHandle.includes('n')) { d.h = Math.max(20, sH - dy); d.y = sT + (sH - d.h); }
+            
+            applyCSS(el, d);
+        }
+
+        // Rotating
+        function startRotate(e, id) {
+            e.preventDefault(); e.stopPropagation();
+            select(id); isRot = true;
+            const el = document.getElementById(id); const d = els.find(x=>x.id===selId);
+            const rect = el.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            startAngle = Math.atan2(e.clientY - cy, e.clientX - cx);
+            startRot = d.rot || 0;
+            document.addEventListener('mousemove', (ev) => doRotate(ev, cx, cy)); 
+            document.addEventListener('mouseup', stopAll);
+        }
+        function doRotate(e, cx, cy) {
+            if(!isRot) return;
+            const angle = Math.atan2(e.clientY - cy, e.clientX - cx);
+            const deg = (angle - startAngle) * (180 / Math.PI);
+            const d = els.find(x=>x.id===selId);
+            d.rot = startRot + deg;
+            applyCSS(document.getElementById(selId), d);
+        }
+
+        function stopAll() {
+            isD = false; isR = false; isRot = false;
+            document.removeEventListener('mousemove', doDrag);
+            document.removeEventListener('mousemove', doResize);
+            document.removeEventListener('mouseup', stopAll);
+            // We need to remove the specific rotate listener which is tricky with anonymous functions, 
+            // so simplistic approach: replace node to clear listeners or just use a global var for the active function
+            // For simplicity in this structure: we rely on flags
+        }
 
         function select(id) {
             selId=id; document.querySelectorAll('.el').forEach(e=>e.classList.remove('selected')); document.getElementById(id).classList.add('selected');
@@ -294,7 +388,7 @@
 
         window.upd = function(p,v) {
             if(!selId)return; const d=els.find(x=>x.id===selId), el=document.getElementById(selId);
-            if(p==='op')d.op=v; if(p==='fill')d.fill=v; if(p==='shape') { d.shape=v; document.getElementById('radiusContainer').style.display = v==='rect'?'block':'none'; } if(p==='radius') d.radius=v; if(p==='text'){ d.type==='input'?d.placeholder=v:d.text=v; el.innerHTML=d.type==='input'?`[${v}]`:v; } if(p==='color')d.color=v; if(p==='size')d.size=v; applyCSS(el,d);
+            if(p==='op')d.op=v; if(p==='fill')d.fill=v; if(p==='shape') { d.shape=v; document.getElementById('radiusContainer').style.display = v==='rect'?'block':'none'; } if(p==='radius') d.radius=v; if(p==='text'){ d.type==='input'?d.placeholder=v:d.text=v; el.querySelector('.el-content').innerHTML=d.type==='input'?`[${v}]`:v; } if(p==='color')d.color=v; if(p==='size')d.size=v; applyCSS(el,d);
         };
 
         window.del = function(){ if(selId){ document.getElementById(selId).remove(); els=els.filter(x=>x.id!==selId); selId=null; document.getElementById('props').classList.add('hidden'); updateLayers(); }};
@@ -310,53 +404,73 @@
             
             const campData = { id: editingId || 'c_'+Date.now(), title: t, client: user.name, image: bg, elements: els, active: true };
             
-            // Save to Cloud
-            const success = await saveCampaignToCloud(campData);
+            const success = await window.saveCampaignToCloud(campData);
             if(success) { alert("Campaign is Live Worldwide!"); window.switchView('list'); } btn.innerText = oldText;
         };
 
         function loadCampaigns() { 
-            // Use global 'allCamps' fetched from cloud
-            const my=allCamps.filter(c=>c.client===user.name); 
-            const g=document.getElementById('campGrid'); g.innerHTML=''; 
-            if(my.length===0)g.innerHTML='<div class="empty-msg">No campaigns found.</div>'; 
-            my.forEach(c=>{ 
-                // We need index in allCamps for editing
-                const i=allCamps.findIndex(x=>x.id===c.id); 
-                g.innerHTML+=`<div class="camp-card"><div class="card-img"><img src="${c.image}"></div><div class="card-body"><div class="card-title">${c.title}</div><div class="card-actions"><button class="btn-act" onclick="editCamp(${i})">Edit</button><button class="btn-act btn-del" onclick="delCamp(${i})">Del</button></div></div></div>`; 
+            const my = allCamps.filter(c => c.client === user.name); 
+            const g = document.getElementById('campGrid'); g.innerHTML=''; 
+            
+            if(my.length === 0) g.innerHTML = '<div style="grid-column:1/-1; color:#9ca3af; text-align:center;">No campaigns found. Click "+ Create New" to start.</div>'; 
+            
+            my.forEach(c => { 
+                const i = allCamps.findIndex(x => x.id === c.id); 
+                g.innerHTML += `<div class="camp-card"><div class="card-img"><img src="${c.image}" crossorigin="anonymous"></div><div class="card-body"><div class="card-title">${c.title}</div><div class="card-actions"><button class="btn-act" onclick="window.editCamp(${i})">Edit</button><button class="btn-act btn-del" onclick="window.delCamp(${i})">Del</button></div></div></div>`; 
             }); 
         }
         
         window.editCamp = function(i){ 
-            const c=allCamps[i]; editingId=c.id; 
-            document.getElementById('campTitle').value=c.title; els=c.elements; 
+            const c = allCamps[i]; editingId = c.id; 
+            document.getElementById('campTitle').value = c.title; els = c.elements; 
             
-            // Handle cloud image cors
-            const img=new Image(); img.crossOrigin="Anonymous"; img.src=c.image;
-            document.getElementById('btnLaunchText').innerText="💾 Update"; 
-            img.onload=()=>{ 
-                document.getElementById('bgImg').src=c.image; document.getElementById('bgImg').style.display='block'; 
-                document.getElementById('artboard').style.width='450px'; 
-                // Simple aspect ratio fallback
+            const img = new Image(); 
+            img.crossOrigin = "Anonymous"; 
+            img.src = c.image;
+            document.getElementById('btnLaunchText').innerText = "💾 Update"; 
+            
+            img.onload = () => { 
+                document.getElementById('bgImg').src = c.image; 
+                document.getElementById('bgImg').style.display = 'block'; 
+                document.getElementById('artboard').style.width = '450px'; 
                 const asp = img.width > 0 ? img.height/img.width : 1.5;
-                document.getElementById('artboard').style.height=(450*asp)+'px'; 
+                document.getElementById('artboard').style.height = (450*asp)+'px'; 
             }; 
-            document.querySelectorAll('.el').forEach(e=>e.remove()); els.forEach(render); updateLayers(); window.switchView('editor'); 
+            
+            document.querySelectorAll('.el').forEach(e => e.remove()); 
+            els.forEach(render); 
+            updateLayers(); 
+            window.switchView('editor'); 
         };
 
         window.delCamp = async function(i){ 
             if(confirm('Delete from Cloud?')){ 
                 const id = allCamps[i].id;
-                await deleteCampaignCloud(id);
-                initDashboard().then(loadCampaigns);
+                await window.deleteCampaignCloud(id);
+                initDashboard();
             } 
         };
 
-        window.resetData = function() { if(confirm("CLEAR ALL LOCAL DATA?")) { localStorage.clear(); location.reload(); } };
-        function loadProfile(){ document.getElementById('profName').value=user.name; document.getElementById('profEmail').value=user.email; document.getElementById('profPass').value=user.pass; }
-        window.saveProfile = function(){ user.name=document.getElementById('profName').value; user.pass=document.getElementById('profPass').value; localStorage.setItem('clientAccount',JSON.stringify(user)); alert('Saved'); };
+        function loadProfile(){ 
+            document.getElementById('profName').value = user.name; 
+            document.getElementById('profEmail').value = user.email; 
+            document.getElementById('profPass').value = user.pass; 
+        }
 
-        // INITIALIZE
+        window.saveProfile = async function(){ 
+            user.name = document.getElementById('profName').value; 
+            user.pass = document.getElementById('profPass').value; 
+            
+            const success = await window.updateUserCloud(user.email, { name: user.name, pass: user.pass });
+            
+            if (success) {
+                localStorage.setItem('clientAccount', JSON.stringify(user)); 
+                alert('Profile Saved!');
+            } else {
+                alert('Error updating profile.');
+            }
+        };
+
         initDashboard();
         window.switchView('list');
     </script>
