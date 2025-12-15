@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Login | PosterBox</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="./db.js"></script> 
+
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { margin:0; font-family:'Plus Jakarta Sans', sans-serif; height:100vh; display:flex; overflow:hidden; }
@@ -37,6 +41,8 @@
             <p style="color:#64748b; margin-top:5px;">Please enter your details to continue.</p>
         </div>
 
+        <div id="error-msg" style="display:none; padding:15px; background:#fee2e2; color:#ef4444; border-radius:8px; margin-bottom:20px; font-weight:bold;"></div>
+
         <div class="tabs">
             <div class="tab active" id="tab-login" onclick="window.setMode('login')">Log In</div>
             <div class="tab" id="tab-signup" onclick="window.setMode('signup')">Create Account</div>
@@ -61,10 +67,16 @@
         </div>
     </div>
 
-    <script src="db.js"></script>
-
     <script>
-        // Tab Logic
+        // DIAGNOSTIC CHECK
+        window.onload = function() {
+            if (typeof window.registerUserCloud !== 'function') {
+                const msg = document.getElementById('error-msg');
+                msg.style.display = 'block';
+                msg.innerText = "CRITICAL ERROR: db.js failed to load. Please check if 'db.js' is in your GitHub repository.";
+            }
+        };
+
         window.setMode = function(mode) {
             document.getElementById('loginForm').style.display = mode === 'login' ? 'block' : 'none';
             document.getElementById('signupForm').style.display = mode === 'signup' ? 'block' : 'none';
@@ -72,7 +84,6 @@
             document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
         }
 
-        // Signup Function
         window.signup = async function() {
             const name = document.getElementById('sName').value;
             const email = document.getElementById('sEmail').value;
@@ -85,28 +96,26 @@
             btn.innerText = "Creating...";
 
             try {
+                // Check if db.js loaded
+                if(typeof window.registerUserCloud !== 'function') throw new Error("Database not connected. Refresh the page.");
+
                 const acc = { name, email, user, pass, verified: false, tier: 'free', banned: false };
-                
-                // Calls Global function from db.js
                 const result = await window.registerUserCloud(acc);
                 
                 if (result.success) {
                     localStorage.setItem('clientAccount', JSON.stringify(acc));
                     localStorage.setItem('isLoggedIn', 'true');
-                    alert("Account created! Redirecting...");
                     window.location.href = 'dashboard.html';
                 } else {
                     btn.innerText = "Register Organization";
-                    alert("Registration Failed: " + result.message);
+                    alert("Error: " + result.message);
                 }
             } catch (e) {
                 btn.innerText = "Register Organization";
-                alert("System Error: " + e.message);
-                console.error(e);
+                alert(e.message);
             }
         }
 
-        // Login Function
         window.login = async function() {
             const email = document.getElementById('lEmail').value;
             const pass = document.getElementById('lPass').value;
@@ -115,13 +124,12 @@
             btn.innerText = "Checking...";
 
             try {
+                if(typeof window.loginUserCloud !== 'function') throw new Error("Database not connected. Refresh the page.");
+
                 const result = await window.loginUserCloud(email, pass);
 
                 if (result.success) {
-                    if (result.user.banned) {
-                        btn.innerText = "Access Dashboard";
-                        return alert("This account is suspended.");
-                    }
+                    if (result.user.banned) return alert("Account Suspended.");
                     localStorage.setItem('clientAccount', JSON.stringify(result.user));
                     localStorage.setItem('isLoggedIn', 'true');
                     window.location.href = 'dashboard.html';
@@ -131,8 +139,7 @@
                 }
             } catch (e) {
                 btn.innerText = "Access Dashboard";
-                alert("Login Error: " + e.message);
-                console.error(e);
+                alert(e.message);
             }
         }
     </script>
