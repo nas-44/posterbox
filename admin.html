@@ -11,7 +11,7 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin:0; font-family:'Plus Jakarta Sans', sans-serif; background:var(--bg); color:var(--text); display:flex; height:100vh; overflow:hidden; }
 
-        /* SIDEBAR */
+        /* SIDEBAR (Desktop) */
         .sidebar { width: 260px; background: var(--sidebar); color: white; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; transition: transform 0.3s ease; z-index: 1000; }
         .brand { font-size: 1.4rem; font-weight: 700; color: #818cf8; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
         .nav-item { padding: 14px 16px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; font-weight: 600; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; gap: 12px; }
@@ -20,21 +20,29 @@
 
         .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
 
-        /* MAIN */
+        /* MAIN CONTENT */
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         .header { height: 60px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
         .menu-toggle { display: none; font-size: 1.5rem; cursor: pointer; background: none; border: none; color: var(--text); }
         .content-area { flex: 1; padding: 20px; overflow-y: auto; }
 
+        /* MOBILE OPTIMIZATIONS */
+        @media (max-width: 900px) {
+            .sidebar { position: fixed; left: -280px; height: 100%; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+            .sidebar.open { transform: translateX(280px); }
+            .sidebar-overlay.open { display: block; }
+            .menu-toggle { display: block; }
+        }
+
         /* CARDS & STATS */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .card { background: var(--surface); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 20px; }
         .stat-val { font-size: 1.8rem; font-weight: 800; color: var(--sidebar); }
         .stat-lbl { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
 
         /* TABLES */
         .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th { text-align: left; padding: 12px; background: #f8fafc; color: #64748b; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
         .thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: #eee; vertical-align: middle; margin-right: 10px; }
@@ -53,18 +61,11 @@
         @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
         
         .input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; }
-
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -280px; height: 100%; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.open { transform: translateX(280px); }
-            .sidebar-overlay.open { display: block; }
-            .menu-toggle { display: block; }
-        }
     </style>
 </head>
 <body>
 
-    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar-overlay" onclick="window.toggleSidebar()"></div>
 
     <div class="sidebar" id="sidebar">
         <div class="brand"><span>🛡️</span> AdminPanel</div>
@@ -77,7 +78,7 @@
 
     <div class="main">
         <div class="header">
-            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <button class="menu-toggle" onclick="window.toggleSidebar()">☰</button>
             <div style="font-weight:700;">Command Center</div>
             <div style="width:24px;"></div>
         </div>
@@ -96,7 +97,7 @@
                     </div>
                     <div class="card">
                         <div class="stat-lbl">Database Status</div>
-                        <div class="stat-val" style="font-size:1.2rem; margin-top:12px; color:var(--success);">● Cloud Live</div>
+                        <div class="stat-val" style="font-size:1rem; margin-top:12px; color:var(--success);">● Connected</div>
                     </div>
                 </div>
             </div>
@@ -110,7 +111,7 @@
                     <div class="table-wrapper">
                         <table>
                             <thead>
-                                <tr><th>User Info</th><th>Tier</th><th>Status</th><th>Actions</th></tr>
+                                <tr><th>User Info</th><th>Status</th><th>Actions</th></tr>
                             </thead>
                             <tbody id="userTable">
                                 <tr><td colspan="4" style="text-align:center; padding:20px;">Loading Cloud Data...</td></tr>
@@ -126,7 +127,7 @@
                     <div class="table-wrapper">
                         <table>
                             <thead>
-                                <tr><th>Campaign</th><th>Owner</th><th>Status</th><th>Action</th></tr>
+                                <tr><th>Campaign</th><th>Owner</th><th>Action</th></tr>
                             </thead>
                             <tbody id="campTable"></tbody>
                         </table>
@@ -173,29 +174,26 @@
                 document.getElementById('siteNotice').value = settings.notice || '';
             } catch (e) {
                 console.error("Cloud Error", e);
-                // Fail silently or show a toast
             }
         }
 
-        // --- NAVIGATION LOGIC ---
+        // --- NAVIGATION ---
         window.nav = function(id) {
-            // Hide all sections
             document.querySelectorAll('.section').forEach(e => e.classList.remove('active'));
-            // Show target section
             document.getElementById('tab-' + id).classList.add('active');
-
-            // Update Sidebar Active State
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
             document.getElementById('nav-' + id).classList.add('active');
-
-            // Close Mobile Menu
-            document.getElementById('sidebar').classList.remove('open');
-            document.querySelector('.sidebar-overlay').classList.remove('open');
+            window.toggleSidebar(false); // Close menu on click (mobile)
         }
 
-        window.toggleSidebar = function() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.querySelector('.sidebar-overlay').classList.toggle('open');
+        window.toggleSidebar = function(forceOpen) {
+            const sb = document.getElementById('sidebar');
+            const ov = document.querySelector('.sidebar-overlay');
+            if(forceOpen === false) {
+                sb.classList.remove('open'); ov.classList.remove('open');
+            } else {
+                sb.classList.toggle('open'); ov.classList.toggle('open');
+            }
         }
 
         // --- RENDERERS ---
@@ -214,7 +212,6 @@
             }
 
             allUsers.forEach(u => {
-                const isPro = u.tier === 'pro';
                 const isBanned = u.banned === true;
                 const isVerified = u.verified === true;
 
@@ -225,15 +222,11 @@
                             <div style="font-size:0.8rem; color:#64748b;">${u.email}</div>
                         </td>
                         <td>
-                            <span class="badge ${isPro?'bg-blue':'bg-gray'}">${isPro?'PRO':'FREE'}</span>
-                        </td>
-                        <td>
                             <span class="badge ${isBanned?'bg-red':'bg-green'}">${isBanned?'SUSPENDED':'ACTIVE'}</span>
                         </td>
                         <td>
                             <div style="display:flex; gap:5px;">
                                 <button class="btn" onclick="window.toggleUser('${u.email}', 'verified', ${!isVerified})">${isVerified?'Unverify':'Verify'}</button>
-                                <button class="btn" onclick="window.toggleUser('${u.email}', 'tier', '${isPro?'free':'pro'}')">${isPro?'Downgrade':'Upgrade'}</button>
                                 <button class="btn btn-danger" onclick="window.toggleUser('${u.email}', 'banned', ${!isBanned})">${isBanned?'Unban':'Ban'}</button>
                             </div>
                         </td>
@@ -249,9 +242,11 @@
             allCamps.forEach((c, i) => {
                 tb.innerHTML += `
                     <tr>
-                        <td><img src="${c.image}" class="thumb" crossorigin="anonymous"></td>
-                        <td><strong>${c.title}</strong><br><small>${c.client || 'Unknown'}</small></td>
-                        <td><span class="badge bg-green">Active</span></td>
+                        <td><div style="display:flex; align-items:center;">
+                            <img src="${c.image}" class="thumb" crossorigin="anonymous">
+                            <strong>${c.title}</strong>
+                        </div></td>
+                        <td>${c.client || 'Unknown'}</td>
                         <td><button class="btn btn-danger" onclick="window.deleteCamp(${i})">Del</button></td>
                     </tr>`;
             });
@@ -260,17 +255,9 @@
         // --- ACTIONS ---
         window.toggleUser = async function(email, key, value) {
             if(!confirm(`Change ${key} to ${value} for ${email}?`)) return;
-            
-            const updates = {};
-            updates[key] = value;
-            
+            const updates = {}; updates[key] = value;
             const success = await window.updateUserCloud(email, updates);
-            
-            if(success) {
-                await window.init(); // Refresh data
-            } else {
-                alert("Update failed. Check console.");
-            }
+            if(success) await window.init();
         };
 
         window.deleteCamp = async function(i) {
@@ -287,7 +274,7 @@
             alert("Banner updated.");
         };
 
-        // Start
+        // Start immediately
         window.init();
     </script>
 </body>
